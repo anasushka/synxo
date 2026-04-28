@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Synxo - Вход</title>
+	<link rel="stylesheet" href="/site.css">
+</head>
+<body class="auth-page">
+	<div class="page-shell narrow">
+		<header class="site-header">
+			<a class="brand brand-button" href="/">
+				<span class="brand-mark">
+					<img class="brand-logo" src="/synxo_logo.png" alt="Synxo">
+				</span>
+			</a>
+			<nav class="header-actions">
+				<a class="secondary-button" href="/">На главную</a>
+			</nav>
+		</header>
+
+		<main class="auth-layout">
+			<section class="auth-copy">
+				<p class="eyebrow">Добро пожаловать</p>
+				<h1>Вход и регистрация вынесены на отдельную страницу, чтобы ничего не отвлекало.</h1>
+				<p>
+					Сначала авторизация, потом сама лента, профиль и чаты. Если аккаунта еще нет, можно сразу создать его ниже
+					и выбрать интересы из готового списка.
+				</p>
+				<div class="notice-banner" id="auth-notice">Заполни форму и перейди в приложение.</div>
+			</section>
+
+			<section class="auth-panel">
+				<div class="mode-switch">
+					<button class="mode-button is-active" data-mode="login" type="button">Вход</button>
+					<button class="mode-button" data-mode="register" type="button">Регистрация</button>
+				</div>
+
+				<form class="stack-form" id="login-form">
+					<label>
+						<span>Email</span>
+						<input id="login-email" autocomplete="username" type="email" placeholder="name@example.com">
+					</label>
+					<label>
+						<span>Пароль</span>
+						<input id="login-password" autocomplete="current-password" type="password" placeholder="Минимум 8 символов">
+					</label>
+					<div class="form-actions">
+						<button class="primary-button" type="submit">Войти в аккаунт</button>
+					</div>
+				</form>
+
+				<form class="stack-form hidden" id="register-form">
+					<div class="form-grid two">
+						<label>
+							<span>Имя</span>
+							<input id="register-display-name" type="text" placeholder="Anastacia">
+						</label>
+						<label>
+							<span>Возраст</span>
+							<input id="register-age" min="18" type="number" placeholder="22">
+						</label>
+					</div>
+					<label>
+						<span>Email</span>
+						<input id="register-email" autocomplete="username" type="email" placeholder="name@example.com">
+					</label>
+					<label>
+						<span>Пароль</span>
+						<input id="register-password" autocomplete="new-password" type="password" placeholder="Минимум 8 символов">
+					</label>
+					<div class="form-grid two">
+						<label>
+							<span>Город</span>
+							<input id="register-city" type="text" placeholder="Minsk">
+						</label>
+						<label>
+							<span>Состояние профиля</span>
+							<select id="register-state">
+								<option value="DEEP_SEARCH">Deep Search</option>
+								<option value="LIGHT_TALK">Light Talk</option>
+								<option value="GHOST_MODE">Ghost Mode</option>
+							</select>
+						</label>
+					</div>
+					<label>
+						<span>О себе</span>
+						<textarea id="register-bio" placeholder="Коротко расскажи о себе"></textarea>
+					</label>
+					<div class="form-grid two">
+						<label>
+							<span>Latitude</span>
+							<input id="register-latitude" step="any" type="number" placeholder="53.9006">
+						</label>
+						<label>
+							<span>Longitude</span>
+							<input id="register-longitude" step="any" type="number" placeholder="27.5590">
+						</label>
+					</div>
+					<div>
+						<p class="section-label">Интересы</p>
+						<div id="register-interest-groups" class="interest-groups"></div>
+					</div>
+					<div class="form-actions">
+						<button class="primary-button" type="submit">Создать аккаунт</button>
+					</div>
+				</form>
+			</section>
+		</main>
+	</div>
+
+	<script src="/shared.js" defer></script>
+	<script src="/auth.js" defer></script>
+</body>
+</html>

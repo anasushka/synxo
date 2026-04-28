@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Synxo - Приложение</title>
+	<link rel="stylesheet" href="/site.css">
+</head>
+<body class="app-page">
+	<div class="page-shell">
+		<header class="site-header app-header">
+			<div class="app-header-main">
+				<a class="brand brand-button brand-icon-only" href="/app.html" aria-label="Synxo">
+					<span class="brand-mark">
+						<img class="brand-logo" src="/synxo_logo.png" alt="Synxo">
+					</span>
+				</a>
+				<nav class="header-tabs" aria-label="Разделы приложения">
+					<button class="tab-button is-active" data-view="home" type="button">Главная</button>
+					<button class="tab-button" data-view="discover" type="button">Лента</button>
+					<button class="tab-button" data-view="chats" type="button">Чаты</button>
+					<button class="tab-button" data-view="profile" type="button">Профиль</button>
+				</nav>
+			</div>
+			<div class="header-actions app-header-actions">
+				<p class="header-copy" id="session-copy">Загружаем твоё пространство.</p>
+				<button class="secondary-button" id="refresh-button" type="button">Обновить</button>
+			</div>
+		</header>
+
+		<main class="app-main">
+			<section class="view-section is-active" id="view-home">
+				<div class="hero-section compact">
+					<div class="hero-copy" id="home-hero"></div>
+				</div>
+				<div class="stats-grid" id="home-stats"></div>
+			</section>
+
+			<section class="view-section" id="view-discover">
+				<div class="section-header">
+					<div>
+						<p class="eyebrow">Лента</p>
+						<h2>Люди с общими интересами</h2>
+					</div>
+					<div class="mode-switch small">
+						<button class="mode-button is-active" data-strategy="RECOMMENDATION" type="button">По интересам</button>
+						<button class="mode-button" data-strategy="PROXIMITY" type="button">По близости</button>
+					</div>
+				</div>
+				<div class="card-grid" id="discover-list"></div>
+			</section>
+
+			<section class="view-section" id="view-chats">
+				<div class="chat-layout">
+					<div class="chat-list-panel">
+						<div class="section-header tight">
+							<div>
+								<p class="eyebrow">Чаты</p>
+								<h2>Твои взаимные симпатии</h2>
+							</div>
+						</div>
+						<div class="chat-list" id="chat-list"></div>
+					</div>
+
+					<div class="chat-thread-panel">
+						<div class="chat-header" id="chat-header"></div>
+						<div class="chat-thread" id="chat-thread"></div>
+						<form class="composer" id="chat-form">
+							<input id="chat-recipient-id" type="hidden">
+							<div class="composer-row">
+								<textarea id="chat-message" placeholder="Напиши сообщение"></textarea>
+								<button class="primary-button" type="submit">Отправить</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</section>
+
+			<section class="view-section" id="view-profile">
+				<div class="profile-layout">
+					<div class="profile-summary">
+						<div class="profile-photo-stack">
+							<div id="profile-photo-panel"></div>
+							<form class="stack-form profile-photo-upload" id="photo-form">
+								<label>
+									<span>Выбрать файл</span>
+									<input id="profile-photo-file" accept="image/*" type="file">
+								</label>
+								<div class="form-actions">
+									<button class="secondary-button" type="submit">Обновить фото</button>
+								</div>
+							</form>
+						</div>
+						<div class="profile-summary-data" id="profile-summary-data"></div>
+					</div>
+
+					<div class="profile-edit">
+						<div class="section-header tight">
+							<div>
+								<p class="eyebrow">Редактирование</p>
+								<h2>Профиль и настройки</h2>
+							</div>
+							<button class="secondary-button" id="logout-button" type="button">Выйти из аккаунта</button>
+						</div>
+
+						<form class="stack-form" id="profile-form">
+							<div class="form-grid three profile-basics-grid">
+								<label>
+									<span>Возраст</span>
+									<input id="profile-age" min="18" type="number">
+								</label>
+								<label>
+									<span>Город</span>
+									<input id="profile-city" type="text" placeholder="Minsk">
+								</label>
+								<label>
+									<span>Состояние профиля</span>
+									<select id="profile-state">
+										<option value="DEEP_SEARCH">Deep Search</option>
+										<option value="LIGHT_TALK">Light Talk</option>
+										<option value="GHOST_MODE">Ghost Mode</option>
+									</select>
+								</label>
+							</div>
+							<label>
+								<span>О себе</span>
+								<textarea id="profile-bio" placeholder="Пара строк о себе"></textarea>
+							</label>
+							<div class="form-grid two">
+								<label>
+									<span>Latitude</span>
+									<input id="profile-latitude" step="any" type="number">
+								</label>
+								<label>
+									<span>Longitude</span>
+									<input id="profile-longitude" step="any" type="number">
+								</label>
+							</div>
+							<div>
+								<p class="section-label">Интересы</p>
+								<div id="profile-interest-groups" class="interest-groups"></div>
+							</div>
+							<div class="form-actions">
+								<button class="primary-button" type="submit">Сохранить изменения</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</section>
+		</main>
+	</div>
+
+	<script src="/shared.js" defer></script>
+	<script src="/app-page.js" defer></script>
+</body>
+</html>
