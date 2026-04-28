@@ -2,6 +2,7 @@ package com.synxo.infrastructure.security;
 
 import com.synxo.domain.model.User;
 import com.synxo.repository.UserRepository;
+import com.synxo.service.util.ServiceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +19,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) {
-		User user = userRepository.findByEmail(username.trim().toLowerCase())
+		User user = userRepository.findByEmail(ServiceUtils.normalizeEmail(username))
 			.orElseThrow(() -> new UsernameNotFoundException("User with email %s not found".formatted(username)));
 
 		return org.springframework.security.core.userdetails.User.withUsername(user.getEmail())

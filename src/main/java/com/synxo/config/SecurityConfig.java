@@ -35,8 +35,7 @@ public class SecurityConfig {
 					"/*.webp",
 					"/*.gif",
 					"/*.svg",
-					"/favicon.ico",
-					"/uploads/**"
+					"/favicon.ico"
 				).permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/interests").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()

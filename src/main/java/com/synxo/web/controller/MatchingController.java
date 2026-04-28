@@ -25,9 +25,11 @@ public class MatchingController {
 	@GetMapping
 	public List<MatchResponse> findMatches(
 		Authentication authentication,
-		@RequestParam(defaultValue = "RECOMMENDATION") MatchingMode strategy
+		@RequestParam(defaultValue = "RECOMMENDATION") MatchingMode strategy,
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int size
 	) {
-		return matchingService.findMatches(authentication.getName(), strategy).stream()
+		return matchingService.findMatches(authentication.getName(), strategy, page, size).stream()
 			.map(apiMapper::toMatchResponse)
 			.toList();
 	}

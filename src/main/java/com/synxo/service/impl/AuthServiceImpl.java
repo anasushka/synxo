@@ -9,10 +9,7 @@ import com.synxo.repository.UserRepository;
 import com.synxo.service.AuthService;
 import com.synxo.service.NotificationService;
 import com.synxo.service.command.RegisterUserCommand;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.synxo.service.util.ServiceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	public User register(RegisterUserCommand command) {
-		String email = normalizeEmail(command.email());
+		String email = ServiceUtils.normalizeEmail(command.email());
 		if (userRepository.existsByEmail(email)) {
 			throw new ConflictException("User with email %s already exists".formatted(email));
 		}
@@ -39,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
 			.city(command.city().trim())
 			.latitude(command.latitude())
 			.longitude(command.longitude())
-			.interests(normalizeInterests(command.interests()))
+			.interests(ServiceUtils.normalizeInterests(command.interests()))
 			.state(command.state() == null ? ProfileStateType.DEEP_SEARCH : command.state())
 			.build();
 
@@ -59,22 +56,7 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	@Transactional(readOnly = true)
 	public User getCurrentUser(String email) {
-		return userRepository.findByEmail(normalizeEmail(email))
+		return userRepository.findByEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("User with email %s not found".formatted(email)));
-	}
-
-	private String normalizeEmail(String email) {
-		return email.trim().toLowerCase(Locale.ROOT);
-	}
-
-	private Set<String> normalizeInterests(Set<String> interests) {
-		if (interests == null) {
-			return Set.of();
-		}
-
-		return interests.stream()
-			.map(String::trim)
-			.filter(value -> !value.isBlank())
-			.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 }

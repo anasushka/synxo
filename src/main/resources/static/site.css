@@ -1,5 +1,4 @@
 :root {
-	--bg: #fff8f9;
 	--surface: rgba(255, 248, 250, 0.88);
 	--surface-strong: #fffdfd;
 	--line: #ead5e5;
@@ -96,10 +95,6 @@ img {
 	flex: 0 0 auto;
 }
 
-.brand-icon-only {
-	flex: 0 0 auto;
-}
-
 .brand-button {
 	padding: 8px 12px;
 	border-radius: var(--radius);
@@ -182,13 +177,6 @@ img {
 .action-button.is-active {
 	background: var(--accent-soft);
 	border-color: rgba(167, 110, 160, 0.4);
-}
-
-.tabbar {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-	margin-bottom: 16px;
 }
 
 .app-header {

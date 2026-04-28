@@ -8,10 +8,7 @@ import com.synxo.service.NotificationService;
 import com.synxo.service.ProfileImageStorageService;
 import com.synxo.service.ProfileService;
 import com.synxo.service.command.UpdateProfileCommand;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.synxo.service.util.ServiceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +26,7 @@ public class ProfileServiceImpl implements ProfileService {
 	@Override
 	@Transactional(readOnly = true)
 	public Profile getCurrentProfile(String email) {
-		return profileRepository.findByUserEmail(normalizeEmail(email))
+		return profileRepository.findByUserEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("Profile for %s not found".formatted(email)));
 	}
 
@@ -52,7 +49,7 @@ public class ProfileServiceImpl implements ProfileService {
 		profile.setCity(command.city().trim());
 		profile.setLatitude(command.latitude());
 		profile.setLongitude(command.longitude());
-		profile.setInterests(normalizeInterests(command.interests()));
+		profile.setInterests(ServiceUtils.normalizeInterests(command.interests()));
 		profile.markActive();
 		return profileRepository.save(profile);
 	}
@@ -67,22 +64,7 @@ public class ProfileServiceImpl implements ProfileService {
 	}
 
 	private Profile getProfileByEmail(String email) {
-		return profileRepository.findByUserEmail(normalizeEmail(email))
+		return profileRepository.findByUserEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("Profile for %s not found".formatted(email)));
-	}
-
-	private String normalizeEmail(String email) {
-		return email.trim().toLowerCase(Locale.ROOT);
-	}
-
-	private Set<String> normalizeInterests(Set<String> interests) {
-		if (interests == null) {
-			return Set.of();
-		}
-
-		return interests.stream()
-			.map(String::trim)
-			.filter(value -> !value.isBlank())
-			.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 }

@@ -10,10 +10,11 @@ import com.synxo.service.MatchingService;
 import com.synxo.service.model.LikeResult;
 import com.synxo.service.model.LikeSnapshot;
 import com.synxo.service.model.MatchResult;
+import com.synxo.service.util.ServiceUtils;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,27 +39,34 @@ public class MatchingServiceImpl implements MatchingService {
 	}
 
 	@Override
-	public List<MatchResult> findMatches(String email, MatchingMode mode) {
-		Profile source = profileRepository.findByUserEmail(normalizeEmail(email))
+	public List<MatchResult> findMatches(String email, MatchingMode mode, int page, int size) {
+		Profile source = profileRepository.findByUserEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("Profile for %s not found".formatted(email)));
 
 		source.markActive();
 		profileRepository.save(source);
 
-		List<Profile> candidates = source.search(profileRepository.findByUserIdNot(source.getUser().getId())).stream()
-			.filter(candidate -> source.commonInterestCount(candidate) > 0)
-			.toList();
+		int candidateBatchSize = Math.max(size * 10, 100);
+		List<Profile> rawCandidates = profileRepository.findByUserIdNot(
+			source.getUser().getId(),
+			PageRequest.of(0, candidateBatchSize)
+		);
+		List<Profile> candidates = source.search(rawCandidates);
 		MatchingStrategy strategy = strategies.getOrDefault(mode, strategies.get(MatchingMode.RECOMMENDATION));
 		LikeSnapshot snapshot = profileLikeService.getSnapshot(source.getUser().getId());
 
-		return strategy.rank(source, candidates).stream()
+		List<MatchResult> ranked = strategy.rank(source, candidates).stream()
 			.map(candidate -> toMatchResult(source, candidate, snapshot))
 			.toList();
+
+		int from = page * size;
+		int to = Math.min(from + size, ranked.size());
+		return from >= ranked.size() ? List.of() : ranked.subList(from, to);
 	}
 
 	@Override
 	public MatchResult likeProfile(String email, Long targetUserId) {
-		Profile source = profileRepository.findByUserEmail(normalizeEmail(email))
+		Profile source = profileRepository.findByUserEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("Profile for %s not found".formatted(email)));
 		Profile candidate = profileRepository.findByUserId(targetUserId)
 			.orElseThrow(() -> new ResourceNotFoundException("Profile for user id %s not found".formatted(targetUserId)));
@@ -102,10 +110,6 @@ public class MatchingServiceImpl implements MatchingService {
 			likedYou,
 			mutualLike
 		);
-	}
-
-	private String normalizeEmail(String email) {
-		return email.trim().toLowerCase(Locale.ROOT);
 	}
 
 	private Double round(double value) {

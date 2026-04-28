@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface MatchingService {
 
-	List<MatchResult> findMatches(String email, MatchingMode mode);
+	List<MatchResult> findMatches(String email, MatchingMode mode, int page, int size);
 
 	MatchResult likeProfile(String email, Long targetUserId);
 }

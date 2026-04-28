@@ -4,7 +4,9 @@ import com.synxo.domain.enums.MatchingMode;
 import com.synxo.domain.model.Profile;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ProximityStrategy implements MatchingStrategy {
 
 	@Override

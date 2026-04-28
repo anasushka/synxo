@@ -13,11 +13,13 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SocialFlowIntegrationTest {
 
 	@Autowired
@@ -51,7 +53,7 @@ class SocialFlowIntegrationTest {
 		Long bellaId = authService.getCurrentUser("bella@example.com").getId();
 		Long claraId = authService.getCurrentUser("clara@example.com").getId();
 
-		List<MatchResult> matches = matchingService.findMatches("alice@example.com", MatchingMode.RECOMMENDATION);
+		List<MatchResult> matches = matchingService.findMatches("alice@example.com", MatchingMode.RECOMMENDATION, 0, 20);
 
 		assertThat(matches).extracting(MatchResult::userId)
 			.contains(bellaId)

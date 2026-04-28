@@ -14,11 +14,11 @@ import com.synxo.service.ProfileLikeService;
 import com.synxo.service.command.SendMessageCommand;
 import com.synxo.service.model.ChatMessageView;
 import com.synxo.service.model.ChatPreview;
+import com.synxo.service.util.ServiceUtils;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -101,7 +101,7 @@ public class ChatServiceImpl implements ChatService {
 	}
 
 	private User getUserByEmail(String email) {
-		return userRepository.findByEmail(normalizeEmail(email))
+		return userRepository.findByEmail(ServiceUtils.normalizeEmail(email))
 			.orElseThrow(() -> new ResourceNotFoundException("User with email %s not found".formatted(email)));
 	}
 
@@ -139,8 +139,10 @@ public class ChatServiceImpl implements ChatService {
 	}
 
 	private void markProfileActive(Long userId) {
-		profileRepository.findByUserId(userId)
-			.ifPresent(Profile::markActive);
+		profileRepository.findByUserId(userId).ifPresent(profile -> {
+			profile.markActive();
+			profileRepository.save(profile);
+		});
 	}
 
 	private void ensureMutualLike(User currentUser, User otherUser) {
@@ -149,7 +151,4 @@ public class ChatServiceImpl implements ChatService {
 		}
 	}
 
-	private String normalizeEmail(String email) {
-		return email.trim().toLowerCase(Locale.ROOT);
-	}
 }

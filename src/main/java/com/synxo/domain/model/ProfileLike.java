@@ -13,13 +13,19 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(
 	name = "profile_likes",
@@ -27,16 +33,19 @@ import lombok.NoArgsConstructor;
 )
 public class ProfileLike {
 
+	@EqualsAndHashCode.Include
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "liker_id", nullable = false)
+	@ToString.Exclude
 	private User liker;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "liked_id", nullable = false)
+	@ToString.Exclude
 	private User liked;
 
 	@Column(nullable = false)
