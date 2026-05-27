@@ -20,7 +20,9 @@ class MatchingStrategyTest {
 		Profile strongCandidate = profile(2L, 53.91, 27.57, Set.of("music", "travel"));
 		Profile mediumCandidate = profile(3L, 53.92, 27.58, Set.of("music"));
 
-		List<Profile> ranked = recommendationStrategy.rank(source, List.of(mediumCandidate, strongCandidate));
+		List<Profile> ranked = recommendationStrategy.rank(source, List.of(mediumCandidate, strongCandidate), MatchingContext.empty()).stream()
+			.map(ScoredProfile::profile)
+			.toList();
 
 		assertThat(ranked).containsExactly(strongCandidate, mediumCandidate);
 	}
@@ -31,7 +33,9 @@ class MatchingStrategyTest {
 		Profile nearest = profile(2L, 53.9005, 27.5605, Set.of("music"));
 		Profile farthest = profile(3L, 55.75, 37.61, Set.of("music"));
 
-		List<Profile> ranked = proximityStrategy.rank(source, List.of(farthest, nearest));
+		List<Profile> ranked = proximityStrategy.rank(source, List.of(farthest, nearest), MatchingContext.empty()).stream()
+			.map(ScoredProfile::profile)
+			.toList();
 
 		assertThat(ranked).containsExactly(nearest, farthest);
 	}

@@ -14,6 +14,14 @@ public interface ProfileState {
 
 	ProfileStateType getType();
 
+	default int minimumSharedInterests() {
+		return 0;
+	}
+
+	default boolean requiresRecentlyActiveCandidates() {
+		return false;
+	}
+
 	default Stream<Profile> visibleCandidates(Profile current, List<Profile> candidates) {
 		return candidates.stream()
 			.filter(Objects::nonNull)

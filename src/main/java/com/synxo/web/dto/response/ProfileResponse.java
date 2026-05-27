@@ -14,6 +14,11 @@ public record ProfileResponse(
 	String bio,
 	Double latitude,
 	Double longitude,
+	Double cityLatitude,
+	Double cityLongitude,
+	Double preciseLatitude,
+	Double preciseLongitude,
+	boolean preciseLocationEnabled,
 	ProfileStateType state,
 	Set<String> interests,
 	LocalDateTime lastActiveAt

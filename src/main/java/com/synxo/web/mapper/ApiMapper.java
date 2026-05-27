@@ -2,18 +2,22 @@ package com.synxo.web.mapper;
 
 import com.synxo.domain.model.Profile;
 import com.synxo.domain.model.User;
+import com.synxo.domain.model.UserNotification;
 import com.synxo.service.command.SendMessageCommand;
 import com.synxo.service.command.RegisterUserCommand;
+import com.synxo.service.command.UpdatePreciseLocationCommand;
 import com.synxo.service.command.UpdateProfileCommand;
 import com.synxo.service.model.ChatMessageView;
 import com.synxo.service.model.ChatPreview;
 import com.synxo.service.model.MatchResult;
 import com.synxo.web.dto.request.RegisterRequest;
 import com.synxo.web.dto.request.SendMessageRequest;
+import com.synxo.web.dto.request.UpdatePreciseLocationRequest;
 import com.synxo.web.dto.request.UpdateProfileRequest;
 import com.synxo.web.dto.response.ChatMessageResponse;
 import com.synxo.web.dto.response.ChatPreviewResponse;
 import com.synxo.web.dto.response.MatchResponse;
+import com.synxo.web.dto.response.NotificationResponse;
 import com.synxo.web.dto.response.ProfileResponse;
 import com.synxo.web.dto.response.UserResponse;
 import org.springframework.stereotype.Component;
@@ -29,8 +33,6 @@ public class ApiMapper {
 			request.age(),
 			request.bio(),
 			request.city(),
-			request.latitude(),
-			request.longitude(),
 			request.interests(),
 			request.state()
 		);
@@ -56,8 +58,13 @@ public class ApiMapper {
 			profile.getUser().getAge(),
 			profile.getCity(),
 			profile.getBio(),
+			profile.effectiveLatitude(),
+			profile.effectiveLongitude(),
 			profile.getLatitude(),
 			profile.getLongitude(),
+			profile.getPreciseLatitude(),
+			profile.getPreciseLongitude(),
+			profile.hasPreciseLocation(),
 			profile.getState(),
 			profile.getInterests(),
 			profile.getLastActiveAt()
@@ -75,6 +82,12 @@ public class ApiMapper {
 			matchResult.state(),
 			matchResult.sharedInterests(),
 			matchResult.distanceKm(),
+			matchResult.score(),
+			matchResult.interestScore(),
+			matchResult.distanceScore(),
+			matchResult.intentionScore(),
+			matchResult.activityScore(),
+			matchResult.socialScore(),
 			matchResult.likedByYou(),
 			matchResult.likedYou(),
 			matchResult.mutualLike()
@@ -86,10 +99,12 @@ public class ApiMapper {
 			request.age(),
 			request.bio(),
 			request.city(),
-			request.latitude(),
-			request.longitude(),
 			request.interests()
 		);
+	}
+
+	public UpdatePreciseLocationCommand toCommand(UpdatePreciseLocationRequest request) {
+		return new UpdatePreciseLocationCommand(request.enabled(), request.latitude(), request.longitude());
 	}
 
 	public SendMessageCommand toCommand(SendMessageRequest request) {
@@ -115,6 +130,15 @@ public class ApiMapper {
 			message.content(),
 			message.createdAt(),
 			message.outgoing()
+		);
+	}
+
+	public NotificationResponse toNotificationResponse(UserNotification notification) {
+		return new NotificationResponse(
+			notification.getId(),
+			notification.getType(),
+			notification.getMessage(),
+			notification.getCreatedAt()
 		);
 	}
 }

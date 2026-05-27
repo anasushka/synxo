@@ -9,18 +9,24 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProximityStrategy implements MatchingStrategy {
 
+	private static final ScoreWeights WEIGHTS = new ScoreWeights(25, 45, 15, 5, 10);
+
+	private final CompatibilityScorer scorer = new CompatibilityScorer();
+
 	@Override
 	public MatchingMode getMode() {
 		return MatchingMode.PROXIMITY;
 	}
 
 	@Override
-	public List<Profile> rank(Profile source, List<Profile> candidates) {
+	public List<ScoredProfile> rank(Profile source, List<Profile> candidates, MatchingContext context) {
 		return candidates.stream()
+			.map(candidate -> new ScoredProfile(candidate, scorer.score(source, candidate, context, WEIGHTS)))
 			.sorted(Comparator
-				.comparingDouble(source::distanceTo)
-				.thenComparing(Comparator.comparingLong((Profile candidate) -> source.commonInterestCount(candidate)).reversed())
-				.thenComparing(Profile::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+				.comparingDouble((ScoredProfile scoredProfile) -> scoredProfile.score().total())
+				.reversed()
+				.thenComparing(scoredProfile -> source.distanceTo(scoredProfile.profile()))
+				.thenComparing(scoredProfile -> scoredProfile.profile().getId(), Comparator.nullsLast(Comparator.naturalOrder())))
 			.toList();
 	}
 }

@@ -70,6 +70,14 @@ public class Profile {
 	@Column(nullable = false)
 	private Double longitude;
 
+	private Double preciseLatitude;
+
+	private Double preciseLongitude;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Boolean preciseLocationEnabled = false;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default
@@ -114,14 +122,18 @@ public class Profile {
 	}
 
 	public double distanceTo(Profile other) {
-		if (other == null || latitude == null || longitude == null || other.getLatitude() == null || other.getLongitude() == null) {
+		Double sourceLatitude = effectiveLatitude();
+		Double sourceLongitude = effectiveLongitude();
+		Double targetLatitude = other == null ? null : other.effectiveLatitude();
+		Double targetLongitude = other == null ? null : other.effectiveLongitude();
+		if (sourceLatitude == null || sourceLongitude == null || targetLatitude == null || targetLongitude == null) {
 			return Double.MAX_VALUE;
 		}
 
-		double latDistance = Math.toRadians(other.getLatitude() - latitude);
-		double lonDistance = Math.toRadians(other.getLongitude() - longitude);
-		double startLat = Math.toRadians(latitude);
-		double endLat = Math.toRadians(other.getLatitude());
+		double latDistance = Math.toRadians(targetLatitude - sourceLatitude);
+		double lonDistance = Math.toRadians(targetLongitude - sourceLongitude);
+		double startLat = Math.toRadians(sourceLatitude);
+		double endLat = Math.toRadians(targetLatitude);
 
 		double a = Math.pow(Math.sin(latDistance / 2), 2)
 			+ Math.cos(startLat) * Math.cos(endLat) * Math.pow(Math.sin(lonDistance / 2), 2);
@@ -132,6 +144,32 @@ public class Profile {
 
 	public void markActive() {
 		lastActiveAt = LocalDateTime.now();
+	}
+
+	public Double effectiveLatitude() {
+		if (hasPreciseLocation()) {
+			return preciseLatitude;
+		}
+		return latitude;
+	}
+
+	public Double effectiveLongitude() {
+		if (hasPreciseLocation()) {
+			return preciseLongitude;
+		}
+		return longitude;
+	}
+
+	public boolean hasPreciseLocation() {
+		return Boolean.TRUE.equals(preciseLocationEnabled) && preciseLatitude != null && preciseLongitude != null;
+	}
+
+	public int minimumSharedInterestsForSearch() {
+		return resolveState().minimumSharedInterests();
+	}
+
+	public boolean requiresRecentlyActiveCandidates() {
+		return resolveState().requiresRecentlyActiveCandidates();
 	}
 
 	private ProfileState resolveState() {

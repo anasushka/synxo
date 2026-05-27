@@ -7,8 +7,10 @@ import com.synxo.domain.model.Profile;
 import com.synxo.domain.model.User;
 import com.synxo.repository.UserRepository;
 import com.synxo.service.AuthService;
+import com.synxo.service.LocationService;
 import com.synxo.service.NotificationService;
 import com.synxo.service.command.RegisterUserCommand;
+import com.synxo.service.model.Coordinates;
 import com.synxo.service.util.ServiceUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NotificationService notificationService;
+	private final LocationService locationService;
 
 	@Override
 	public User register(RegisterUserCommand command) {
@@ -31,11 +34,15 @@ public class AuthServiceImpl implements AuthService {
 			throw new ConflictException("User with email %s already exists".formatted(email));
 		}
 
+		String city = command.city().trim();
+		Coordinates cityCoordinates = locationService.resolveCity(city);
+
 		Profile profile = Profile.builder()
 			.bio(command.bio())
-			.city(command.city().trim())
-			.latitude(command.latitude())
-			.longitude(command.longitude())
+			.city(city)
+			.latitude(cityCoordinates.latitude())
+			.longitude(cityCoordinates.longitude())
+			.preciseLocationEnabled(false)
 			.interests(ServiceUtils.normalizeInterests(command.interests()))
 			.state(command.state() == null ? ProfileStateType.DEEP_SEARCH : command.state())
 			.build();

@@ -31,12 +31,6 @@ public record RegisterRequest(
 	@NotBlank(message = "City is required")
 	String city,
 
-	@NotNull(message = "Latitude is required")
-	Double latitude,
-
-	@NotNull(message = "Longitude is required")
-	Double longitude,
-
 	@NotEmpty(message = "At least one interest is required")
 	Set<@NotBlank(message = "Interest cannot be blank") String> interests,
 

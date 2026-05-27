@@ -2,6 +2,7 @@ package com.synxo.web.controller;
 
 import com.synxo.domain.model.Profile;
 import com.synxo.service.ProfileService;
+import com.synxo.web.dto.request.UpdatePreciseLocationRequest;
 import com.synxo.web.dto.request.UpdateProfileRequest;
 import com.synxo.web.dto.request.UpdateProfileStateRequest;
 import com.synxo.web.dto.response.ProfileResponse;
@@ -48,6 +49,15 @@ public class ProfileController {
 		@Valid @RequestBody UpdateProfileStateRequest request
 	) {
 		Profile profile = profileService.changeState(authentication.getName(), request.state());
+		return apiMapper.toProfileResponse(profile);
+	}
+
+	@PutMapping("/me/precise-location")
+	public ProfileResponse updatePreciseLocation(
+		Authentication authentication,
+		@Valid @RequestBody UpdatePreciseLocationRequest request
+	) {
+		Profile profile = profileService.updatePreciseLocation(authentication.getName(), apiMapper.toCommand(request));
 		return apiMapper.toProfileResponse(profile);
 	}
 

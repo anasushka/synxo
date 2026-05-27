@@ -92,8 +92,6 @@ class SocialFlowIntegrationTest {
 			24,
 			"Открыта к общению",
 			"Minsk",
-			53.9006,
-			27.5590,
 			interests,
 			ProfileStateType.LIGHT_TALK
 		));

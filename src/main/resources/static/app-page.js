@@ -10,7 +10,10 @@ const appState = {
 	interestCategories: [],
 	activeView: "home",
 	strategy: "RECOMMENDATION",
-	selectedChatUserId: null
+	selectedChatUserId: null,
+	visibleNotificationIds: new Set(),
+	dismissedNotificationIds: new Set(),
+	notificationPollId: null
 };
 
 const appElements = {
@@ -37,8 +40,9 @@ const appElements = {
 	profileCity: document.getElementById("profile-city"),
 	profileState: document.getElementById("profile-state"),
 	profileBio: document.getElementById("profile-bio"),
-	profileLatitude: document.getElementById("profile-latitude"),
-	profileLongitude: document.getElementById("profile-longitude"),
+	profileLocationStatus: document.getElementById("profile-location-status"),
+	detectLocationButton: document.getElementById("detect-location-button"),
+	disableLocationButton: document.getElementById("disable-location-button"),
 	profileInterestGroups: document.getElementById("profile-interest-groups"),
 	photoForm: document.getElementById("photo-form"),
 	profilePhotoFile: document.getElementById("profile-photo-file")
@@ -58,6 +62,8 @@ async function initApp() {
 		appState.interestCategories = await AppShared.apiRequest("/api/interests");
 		await refreshApp(false);
 		renderAll();
+		await loadNotifications();
+		startNotificationPolling();
 	} catch (error) {
 		handleAuthFailure(error);
 	}
@@ -112,6 +118,14 @@ function bindAppEvents() {
 	appElements.photoForm.addEventListener("submit", async event => {
 		event.preventDefault();
 		await uploadProfilePhoto();
+	});
+
+	appElements.detectLocationButton.addEventListener("click", async () => {
+		await detectPreciseLocation();
+	});
+
+	appElements.disableLocationButton.addEventListener("click", async () => {
+		await disablePreciseLocation();
 	});
 
 	document.addEventListener("click", async event => {
@@ -241,8 +255,6 @@ async function saveProfile() {
 		age: Number(appElements.profileAge.value),
 		city: appElements.profileCity.value.trim(),
 		bio: appElements.profileBio.value.trim(),
-		latitude: Number(appElements.profileLatitude.value),
-		longitude: Number(appElements.profileLongitude.value),
 		interests: collectCheckedValues(appElements.profileInterestGroups)
 	};
 
@@ -264,6 +276,58 @@ async function saveProfile() {
 	} catch (error) {
 		showNotice(error.message, "error");
 	}
+}
+
+async function detectPreciseLocation() {
+	if (!navigator.geolocation) {
+		showNotice("Браузер не поддерживает определение геолокации.", "error");
+		return;
+	}
+
+	try {
+		appElements.detectLocationButton.disabled = true;
+		const position = await readBrowserLocation();
+		await AppShared.apiRequest("/api/profiles/me/precise-location", {
+			method: "PUT",
+			body: {
+				enabled: true,
+				latitude: position.coords.latitude,
+				longitude: position.coords.longitude
+			}
+		});
+		await refreshApp(false);
+		showNotice("Точная локация включена.", "success");
+	} catch (error) {
+		showNotice(error.message || "Не удалось определить точную локацию.", "error");
+	} finally {
+		appElements.detectLocationButton.disabled = false;
+	}
+}
+
+async function disablePreciseLocation() {
+	try {
+		await AppShared.apiRequest("/api/profiles/me/precise-location", {
+			method: "PUT",
+			body: { enabled: false }
+		});
+		await refreshApp(false);
+		showNotice("Точная локация отключена. Используем координаты города.", "success");
+	} catch (error) {
+		showNotice(error.message, "error");
+	}
+}
+
+function readBrowserLocation() {
+	return new Promise((resolve, reject) => {
+		navigator.geolocation.getCurrentPosition(resolve, error => {
+			const fallbackMessage = "Браузер не дал доступ к геолокации.";
+			reject(new Error(error.message || fallbackMessage));
+		}, {
+			enableHighAccuracy: true,
+			timeout: 10000,
+			maximumAge: 60000
+		});
+	});
 }
 
 async function uploadProfilePhoto() {
@@ -372,12 +436,23 @@ function renderDiscover() {
 							<p class="muted">${AppShared.escapeHtml(match.city)} · ${AppShared.escapeHtml(String(match.age))} лет</p>
 							<p class="muted">${AppShared.escapeHtml(match.state)}</p>
 						</div>
-						<div class="muted compact-copy">${match.distanceKm == null ? "n/a" : AppShared.escapeHtml(match.distanceKm.toFixed(1) + " km")}</div>
+						<div class="score-stack">
+							<strong>${AppShared.escapeHtml(Math.round(match.score || 0) + "%")}</strong>
+							<span>${match.distanceKm == null ? "n/a" : AppShared.escapeHtml(match.distanceKm.toFixed(1) + " km")}</span>
+						</div>
 					</div>
 
 					<div>
 						<p class="section-label">Общие интересы</p>
 						<div class="chip-row">${match.sharedInterests.map(interest => `<span class="chip">${AppShared.escapeHtml(interest)}</span>`).join("")}</div>
+					</div>
+
+					<div class="score-breakdown">
+						<span>Интересы ${formatScore(match.interestScore)}</span>
+						<span>Локация ${formatScore(match.distanceScore)}</span>
+						<span>Формат ${formatScore(match.intentionScore)}</span>
+						<span>Активность ${formatScore(match.activityScore)}</span>
+						<span>Симпатия ${formatScore(match.socialScore)}</span>
 					</div>
 
 					<div class="chip-row">
@@ -496,8 +571,8 @@ function renderProfile() {
 	appElements.profileCity.value = appState.profile.city || "";
 	appElements.profileState.value = appState.profile.state || "DEEP_SEARCH";
 	appElements.profileBio.value = appState.profile.bio || "";
-	appElements.profileLatitude.value = appState.profile.latitude ?? "";
-	appElements.profileLongitude.value = appState.profile.longitude ?? "";
+	appElements.profileLocationStatus.textContent = locationStatusText(appState.profile);
+	appElements.disableLocationButton.disabled = !appState.profile.preciseLocationEnabled;
 	renderInterestGroups(appElements.profileInterestGroups, appState.interestCategories, appState.profile.interests || []);
 }
 
@@ -541,6 +616,26 @@ function previewMessage(message) {
 		return "Без сообщений";
 	}
 	return value.length > 32 ? value.slice(0, 32) + "..." : value;
+}
+
+function formatScore(value) {
+	return Math.round(Number(value || 0)) + "%";
+}
+
+function locationStatusText(profile) {
+	const mode = profile.preciseLocationEnabled
+		? "Точная локация включена"
+		: "Используются координаты города";
+	const cityCoordinates = coordinatesLabel(profile.cityLatitude, profile.cityLongitude);
+	const activeCoordinates = coordinatesLabel(profile.latitude, profile.longitude);
+	return `${mode}. Город: ${profile.city} (${cityCoordinates}). Для мэтчей: ${activeCoordinates}.`;
+}
+
+function coordinatesLabel(latitude, longitude) {
+	if (latitude == null || longitude == null) {
+		return "n/a";
+	}
+	return Number(latitude).toFixed(4) + ", " + Number(longitude).toFixed(4);
 }
 
 function autoResizeComposer(reset = false) {
@@ -587,6 +682,80 @@ function showFloatingToast(message) {
 	window.setTimeout(() => {
 		toast.remove();
 	}, 3200);
+}
+
+async function loadNotifications() {
+	try {
+		const notifications = await AppShared.apiRequest("/api/notifications");
+		notifications.forEach(showNotificationToast);
+	} catch (error) {
+		if (error.message.includes("401")) {
+			handleAuthFailure(error);
+		}
+	}
+}
+
+function startNotificationPolling() {
+	if (appState.notificationPollId) {
+		window.clearInterval(appState.notificationPollId);
+	}
+	appState.notificationPollId = window.setInterval(loadNotifications, 8000);
+}
+
+function showNotificationToast(notification) {
+	if (
+		appState.visibleNotificationIds.has(notification.id)
+		|| appState.dismissedNotificationIds.has(notification.id)
+	) {
+		return;
+	}
+
+	appState.visibleNotificationIds.add(notification.id);
+	const stack = notificationStack();
+	const toast = document.createElement("article");
+	toast.className = "notification-toast";
+	toast.dataset.notificationId = String(notification.id);
+	toast.innerHTML = `
+		<div>
+			<p class="section-label">${AppShared.escapeHtml(notification.type)}</p>
+			<p>${AppShared.escapeHtml(notification.message)}</p>
+			<time>${AppShared.escapeHtml(AppShared.formatDate(notification.createdAt))}</time>
+		</div>
+		<button class="toast-close" aria-label="Скрыть уведомление" type="button">×</button>
+	`;
+
+	const dismiss = () => dismissNotification(notification.id, toast);
+	toast.querySelector(".toast-close").addEventListener("click", dismiss);
+	stack.append(toast);
+	window.setTimeout(dismiss, 7000);
+}
+
+function notificationStack() {
+	let stack = document.querySelector(".notification-stack");
+	if (!stack) {
+		stack = document.createElement("div");
+		stack.className = "notification-stack";
+		document.body.append(stack);
+	}
+	return stack;
+}
+
+async function dismissNotification(notificationId, toast) {
+	if (appState.dismissedNotificationIds.has(notificationId)) {
+		return;
+	}
+
+	appState.dismissedNotificationIds.add(notificationId);
+	appState.visibleNotificationIds.delete(notificationId);
+	if (toast && toast.isConnected) {
+		toast.remove();
+	}
+
+	try {
+		await AppShared.apiRequest("/api/notifications/" + notificationId + "/dismiss", { method: "PATCH" });
+	} catch (error) {
+		appState.dismissedNotificationIds.delete(notificationId);
+	}
 }
 
 function logout() {

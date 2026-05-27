@@ -14,8 +14,6 @@ const authElements = {
 	registerCity: document.getElementById("register-city"),
 	registerState: document.getElementById("register-state"),
 	registerBio: document.getElementById("register-bio"),
-	registerLatitude: document.getElementById("register-latitude"),
-	registerLongitude: document.getElementById("register-longitude"),
 	registerInterestGroups: document.getElementById("register-interest-groups")
 };
 
@@ -97,9 +95,7 @@ async function register() {
 		city: authElements.registerCity.value.trim(),
 		bio: authElements.registerBio.value.trim(),
 		interests,
-		state: authElements.registerState.value,
-		latitude: Number(authElements.registerLatitude.value),
-		longitude: Number(authElements.registerLongitude.value)
+		state: authElements.registerState.value
 	};
 
 	try {

@@ -126,15 +126,19 @@
 								<span>О себе</span>
 								<textarea id="profile-bio" placeholder="Пара строк о себе"></textarea>
 							</label>
-							<div class="form-grid two">
-								<label>
-									<span>Latitude</span>
-									<input id="profile-latitude" step="any" type="number">
-								</label>
-								<label>
-									<span>Longitude</span>
-									<input id="profile-longitude" step="any" type="number">
-								</label>
+							<div class="location-panel">
+								<div>
+									<p class="section-label">Геолокация</p>
+									<p class="muted" id="profile-location-status"></p>
+									<p class="geo-attribution">
+										Геоданные: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+										и <a href="https://nominatim.org/" target="_blank" rel="noreferrer">Nominatim</a>
+									</p>
+								</div>
+								<div class="form-actions">
+									<button class="secondary-button" id="detect-location-button" type="button">Определить точную локацию</button>
+									<button class="secondary-button" id="disable-location-button" type="button">Отключить точную локацию</button>
+								</div>
 							</div>
 							<div>
 								<p class="section-label">Интересы</p>

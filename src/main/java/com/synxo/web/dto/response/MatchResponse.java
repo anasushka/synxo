@@ -13,6 +13,12 @@ public record MatchResponse(
 	ProfileStateType state,
 	Set<String> sharedInterests,
 	Double distanceKm,
+	Double score,
+	Double interestScore,
+	Double distanceScore,
+	Double intentionScore,
+	Double activityScore,
+	Double socialScore,
 	boolean likedByYou,
 	boolean likedYou,
 	boolean mutualLike

@@ -1,20 +1,22 @@
 package com.synxo.service.impl;
 
 import com.synxo.domain.enums.MatchingMode;
+import com.synxo.domain.enums.ProfileStateType;
 import com.synxo.domain.exception.ResourceNotFoundException;
 import com.synxo.domain.model.Profile;
+import com.synxo.domain.strategy.MatchingContext;
 import com.synxo.domain.strategy.MatchingStrategy;
+import com.synxo.domain.strategy.ScoredProfile;
 import com.synxo.repository.ProfileRepository;
 import com.synxo.service.ProfileLikeService;
 import com.synxo.service.MatchingService;
-import com.synxo.service.model.LikeResult;
 import com.synxo.service.model.LikeSnapshot;
 import com.synxo.service.model.MatchResult;
 import com.synxo.service.util.ServiceUtils;
+import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,17 +48,14 @@ public class MatchingServiceImpl implements MatchingService {
 		source.markActive();
 		profileRepository.save(source);
 
-		int candidateBatchSize = Math.max(size * 10, 100);
-		List<Profile> rawCandidates = profileRepository.findByUserIdNot(
-			source.getUser().getId(),
-			PageRequest.of(0, candidateBatchSize)
-		);
+		List<Profile> rawCandidates = findCandidatePool(source);
 		List<Profile> candidates = source.search(rawCandidates);
 		MatchingStrategy strategy = strategies.getOrDefault(mode, strategies.get(MatchingMode.RECOMMENDATION));
 		LikeSnapshot snapshot = profileLikeService.getSnapshot(source.getUser().getId());
+		MatchingContext context = new MatchingContext(snapshot.likedUserIds(), snapshot.likedByUserIds());
 
-		List<MatchResult> ranked = strategy.rank(source, candidates).stream()
-			.map(candidate -> toMatchResult(source, candidate, snapshot))
+		List<MatchResult> ranked = strategy.rank(source, candidates, context).stream()
+			.map(scoredProfile -> toMatchResult(source, scoredProfile, snapshot))
 			.toList();
 
 		int from = page * size;
@@ -74,25 +73,54 @@ public class MatchingServiceImpl implements MatchingService {
 		source.markActive();
 		profileRepository.save(source);
 
-		LikeResult likeResult = profileLikeService.like(source.getUser().getId(), targetUserId);
-		return toMatchResult(source, candidate, likeResult);
+		profileLikeService.like(source.getUser().getId(), targetUserId);
+		LikeSnapshot snapshot = profileLikeService.getSnapshot(source.getUser().getId());
+		MatchingContext context = new MatchingContext(snapshot.likedUserIds(), snapshot.likedByUserIds());
+		MatchingStrategy strategy = strategies.getOrDefault(MatchingMode.RECOMMENDATION, strategies.values().iterator().next());
+		ScoredProfile scoredProfile = strategy.rank(source, List.of(candidate), context).getFirst();
+		return toMatchResult(source, scoredProfile, snapshot);
 	}
 
-	private MatchResult toMatchResult(Profile source, Profile candidate, LikeSnapshot snapshot) {
+	private List<Profile> findCandidatePool(Profile source) {
+		LocalDateTime activeAfter = source.requiresRecentlyActiveCandidates()
+			? LocalDateTime.now().minusDays(7)
+			: null;
+		int minimumSharedInterests = source.minimumSharedInterestsForSearch();
+
+		if (minimumSharedInterests <= 0) {
+			return profileRepository.findVisibleCandidates(
+				source.getUser().getId(),
+				ProfileStateType.GHOST_MODE,
+				activeAfter
+			);
+		}
+
+		if (source.getInterests() == null || source.getInterests().isEmpty()) {
+			return List.of();
+		}
+
+		return profileRepository.findVisibleCandidatesBySharedInterests(
+			source.getUser().getId(),
+			ProfileStateType.GHOST_MODE,
+			activeAfter,
+			source.getInterests(),
+			minimumSharedInterests
+		);
+	}
+
+	private MatchResult toMatchResult(Profile source, ScoredProfile scoredProfile, LikeSnapshot snapshot) {
+		Profile candidate = scoredProfile.profile();
 		return toMatchResult(
 			source,
-			candidate,
+			scoredProfile,
 			snapshot.likedByYou(candidate.getUser().getId()),
 			snapshot.likedYou(candidate.getUser().getId()),
 			snapshot.mutualLike(candidate.getUser().getId())
 		);
 	}
 
-	private MatchResult toMatchResult(Profile source, Profile candidate, LikeResult likeResult) {
-		return toMatchResult(source, candidate, likeResult.likedByYou(), likeResult.likedYou(), likeResult.mutualLike());
-	}
-
-	private MatchResult toMatchResult(Profile source, Profile candidate, boolean likedByYou, boolean likedYou, boolean mutualLike) {
+	private MatchResult toMatchResult(Profile source, ScoredProfile scoredProfile, boolean likedByYou, boolean likedYou, boolean mutualLike) {
+		Profile candidate = scoredProfile.profile();
 		double distance = source.distanceTo(candidate);
 		Double normalizedDistance = distance == Double.MAX_VALUE ? null : round(distance);
 
@@ -106,6 +134,12 @@ public class MatchingServiceImpl implements MatchingService {
 			candidate.getState(),
 			source.sharedInterests(candidate),
 			normalizedDistance,
+			scoredProfile.score().total(),
+			scoredProfile.score().interest(),
+			scoredProfile.score().distance(),
+			scoredProfile.score().intention(),
+			scoredProfile.score().activity(),
+			scoredProfile.score().social(),
 			likedByYou,
 			likedYou,
 			mutualLike

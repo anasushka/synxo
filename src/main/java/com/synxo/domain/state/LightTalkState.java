@@ -23,4 +23,14 @@ public class LightTalkState implements ProfileState {
 	public ProfileStateType getType() {
 		return ProfileStateType.LIGHT_TALK;
 	}
+
+	@Override
+	public int minimumSharedInterests() {
+		return 1;
+	}
+
+	@Override
+	public boolean requiresRecentlyActiveCandidates() {
+		return true;
+	}
 }

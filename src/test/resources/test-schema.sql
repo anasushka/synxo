@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS chat_messages;
 DROP TABLE IF EXISTS profile_likes;
 DROP TABLE IF EXISTS profile_interests;
 DROP TABLE IF EXISTS profiles;
+DROP TABLE IF EXISTS user_notifications;
 DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
@@ -22,6 +23,9 @@ CREATE TABLE profiles (
 	city TEXT NOT NULL,
 	latitude REAL NOT NULL,
 	longitude REAL NOT NULL,
+	precise_latitude REAL,
+	precise_longitude REAL,
+	precise_location_enabled INTEGER NOT NULL DEFAULT 0,
 	state TEXT NOT NULL CHECK (state IN ('DEEP_SEARCH', 'LIGHT_TALK', 'GHOST_MODE')),
 	last_active_at TIMESTAMP NOT NULL,
 	FOREIGN KEY (user_id) REFERENCES users(id)
@@ -52,4 +56,14 @@ CREATE TABLE chat_messages (
 	created_at TIMESTAMP NOT NULL,
 	FOREIGN KEY (sender_id) REFERENCES users(id),
 	FOREIGN KEY (recipient_id) REFERENCES users(id)
+);
+
+CREATE TABLE user_notifications (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	recipient_user_id INTEGER NOT NULL,
+	type TEXT NOT NULL CHECK (type IN ('MATCH', 'MESSAGE', 'SYSTEM')),
+	message TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	dismissed_at TIMESTAMP,
+	FOREIGN KEY (recipient_user_id) REFERENCES users(id)
 );

@@ -29,8 +29,6 @@ class AuthServiceIntegrationTest {
 			24,
 			"Открыта к общению",
 			"Minsk",
-			53.9006,
-			27.5590,
 			java.util.Set.of("Кошки", "Кофе", "Чтение"),
 			ProfileStateType.LIGHT_TALK
 		));

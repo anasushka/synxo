@@ -14,7 +14,7 @@ public class DefaultNotificationFactory implements NotificationFactory {
 		return new MatchNotification(
 			recipientUserId,
 			matchedProfileId,
-			"You have a new match in Synxo.",
+			"Новая взаимная симпатия. Теперь можно открыть чат.",
 			LocalDateTime.now()
 		);
 	}
@@ -24,7 +24,7 @@ public class DefaultNotificationFactory implements NotificationFactory {
 		return new MessageNotification(
 			recipientUserId,
 			senderUserId,
-			message,
+			"Новое сообщение: %s".formatted(shorten(message)),
 			LocalDateTime.now()
 		);
 	}
@@ -32,5 +32,13 @@ public class DefaultNotificationFactory implements NotificationFactory {
 	@Override
 	public SystemNotification createSystemNotification(Long recipientUserId, String message) {
 		return new SystemNotification(recipientUserId, message, LocalDateTime.now());
+	}
+
+	private String shorten(String message) {
+		if (message == null || message.isBlank()) {
+			return "без текста";
+		}
+		String value = message.trim();
+		return value.length() > 80 ? value.substring(0, 80) + "..." : value;
 	}
 }

@@ -22,4 +22,9 @@ public class DeepSearchState implements ProfileState {
 	public ProfileStateType getType() {
 		return ProfileStateType.DEEP_SEARCH;
 	}
+
+	@Override
+	public int minimumSharedInterests() {
+		return 2;
+	}
 }

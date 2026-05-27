@@ -8,5 +8,5 @@ public interface MatchingStrategy {
 
 	MatchingMode getMode();
 
-	List<Profile> rank(Profile source, List<Profile> candidates);
+	List<ScoredProfile> rank(Profile source, List<Profile> candidates, MatchingContext context);
 }
