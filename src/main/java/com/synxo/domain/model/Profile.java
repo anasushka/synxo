@@ -1,6 +1,7 @@
 package com.synxo.domain.model;
 
 import com.synxo.domain.enums.ProfileStateType;
+import com.synxo.infrastructure.persistence.LocalDateStringConverter;
 import com.synxo.domain.state.ProfileState;
 import com.synxo.domain.state.ProfileStates;
 import jakarta.persistence.CollectionTable;
@@ -16,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Convert;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -95,6 +97,7 @@ public class Profile {
 	private LocalDateTime lastActiveAt = LocalDateTime.now();
 
 	@Column(nullable = false)
+	@Convert(converter = LocalDateStringConverter.class)
 	@Builder.Default
 	private LocalDate lastActivityDate = LocalDate.now();
 

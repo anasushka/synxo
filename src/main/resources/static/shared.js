@@ -59,7 +59,11 @@
 		const parsed = tryParseJson(raw);
 
 		if (!response.ok) {
-			throw new Error(extractErrorMessage(response.status, parsed, raw));
+			const error = new Error(extractErrorMessage(response.status, parsed, raw));
+			error.status = response.status;
+			error.payload = parsed;
+			error.raw = raw;
+			throw error;
 		}
 
 		return parsed;
@@ -90,6 +94,10 @@
 			return "Проверь email и пароль. Сервер не принял авторизацию.";
 		}
 		return raw || ("Ошибка запроса: HTTP " + status);
+	}
+
+	function isUnauthorizedError(error) {
+		return Boolean(error && (error.status === 401 || error.status === 403));
 	}
 
 	function escapeHtml(value) {
@@ -129,6 +137,7 @@
 		formatDate,
 		hasAuth,
 		initialsFrom,
+		isUnauthorizedError,
 		loadAuth,
 		saveAuth
 	};

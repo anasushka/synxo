@@ -20,12 +20,13 @@ const appState = {
 
 const appElements = {
 	sessionCopy: document.getElementById("session-copy"),
-	notice: document.getElementById("app-notice"),
 	refreshButton: document.getElementById("refresh-button"),
 	logoutButton: document.getElementById("logout-button"),
 	tabButtons: Array.from(document.querySelectorAll("[data-view]")),
 	views: Array.from(document.querySelectorAll(".view-section")),
 	strategyButtons: Array.from(document.querySelectorAll("[data-strategy]")),
+	discoverEyebrow: document.getElementById("discover-eyebrow"),
+	discoverTitle: document.getElementById("discover-title"),
 	homeHero: document.getElementById("home-hero"),
 	homeStats: document.getElementById("home-stats"),
 	dailyMatchPanel: document.getElementById("daily-match-panel"),
@@ -76,11 +77,10 @@ async function initApp() {
 	try {
 		appState.interestCategories = await AppShared.apiRequest("/api/interests");
 		await refreshApp(false);
-		renderAll();
 		await loadNotifications();
 		startNotificationPolling();
 	} catch (error) {
-		handleAuthFailure(error);
+		handleAppLoadError(error);
 	}
 }
 
@@ -96,6 +96,7 @@ function bindAppEvents() {
 		button.addEventListener("click", async () => {
 			appState.strategy = button.dataset.strategy;
 			renderStrategyButtons();
+			renderDiscoverHeader();
 			await Promise.all([loadMatches(), loadDailyMatch()]);
 			renderDiscover();
 			renderHome();
@@ -193,12 +194,22 @@ async function refreshApp(showBanner) {
 	appState.user = user;
 	appState.profile = profile;
 
-	await Promise.all([
+	const secondaryLoads = await Promise.allSettled([
 		loadMatches(),
 		loadDailyMatch(),
 		loadChats(),
 		loadAchievements()
 	]);
+
+	const failedSecondaryLoad = secondaryLoads.find(result => result.status === "rejected");
+	if (failedSecondaryLoad) {
+		if (AppShared.isUnauthorizedError(failedSecondaryLoad.reason)) {
+			throw failedSecondaryLoad.reason;
+		}
+
+		console.error("Non-auth app data load failure:", failedSecondaryLoad.reason);
+		showNotice("Часть данных не загрузилась, но вход в аккаунт выполнен.", "error");
+	}
 
 	if (appState.selectedChatUserId) {
 		await loadConversation(appState.selectedChatUserId);
@@ -211,7 +222,8 @@ async function refreshApp(showBanner) {
 }
 
 async function loadMatches() {
-	appState.matches = await AppShared.apiRequest("/api/matches?strategy=" + encodeURIComponent(appState.strategy));
+	const matches = await AppShared.apiRequest("/api/matches?strategy=" + encodeURIComponent(appState.strategy));
+	appState.matches = sortMatchesForCurrentStrategy(matches);
 }
 
 async function loadDailyMatch() {
@@ -408,6 +420,7 @@ function renderAll() {
 	renderHeader();
 	renderViews();
 	renderStrategyButtons();
+	renderDiscoverHeader();
 	renderHome();
 	renderDiscover();
 	renderChats();
@@ -433,6 +446,21 @@ function renderStrategyButtons() {
 	appElements.strategyButtons.forEach(button => {
 		button.classList.toggle("is-active", button.dataset.strategy === appState.strategy);
 	});
+}
+
+function renderDiscoverHeader() {
+	if (!appElements.discoverTitle || !appElements.discoverEyebrow) {
+		return;
+	}
+
+	if (appState.strategy === "PROXIMITY") {
+		appElements.discoverEyebrow.textContent = "Лента по близости";
+		appElements.discoverTitle.textContent = "Люди рядом с тобой";
+		return;
+	}
+
+	appElements.discoverEyebrow.textContent = "Лента по интересам";
+	appElements.discoverTitle.textContent = "Люди с общими интересами";
 }
 
 function renderHome() {
@@ -550,14 +578,6 @@ function renderDiscover() {
 					<div>
 						<p class="section-label">Общие интересы</p>
 						<div class="chip-row">${match.sharedInterests.map(interest => `<span class="chip">${AppShared.escapeHtml(interest)}</span>`).join("")}</div>
-					</div>
-
-					<div class="score-breakdown">
-						<span>Интересы ${formatScore(match.interestScore)}</span>
-						<span>Локация ${formatScore(match.distanceScore)}</span>
-						<span>Формат ${formatScore(match.intentionScore)}</span>
-						<span>Активность ${formatScore(match.activityScore)}</span>
-						<span>Симпатия ${formatScore(match.socialScore)}</span>
 					</div>
 
 					<div>
@@ -769,8 +789,27 @@ function previewMessage(message) {
 	return value.length > 32 ? value.slice(0, 32) + "..." : value;
 }
 
-function formatScore(value) {
-	return Math.round(Number(value || 0)) + "%";
+function sortMatchesForCurrentStrategy(matches) {
+	const normalized = Array.isArray(matches) ? [...matches] : [];
+	if (appState.strategy === "PROXIMITY") {
+		return normalized.sort((left, right) => {
+			const leftDistance = left.distanceKm == null ? Number.MAX_SAFE_INTEGER : Number(left.distanceKm);
+			const rightDistance = right.distanceKm == null ? Number.MAX_SAFE_INTEGER : Number(right.distanceKm);
+			if (leftDistance !== rightDistance) {
+				return leftDistance - rightDistance;
+			}
+			return Number(right.score || 0) - Number(left.score || 0);
+		});
+	}
+
+	return normalized.sort((left, right) => {
+		const leftShared = Array.isArray(left.sharedInterests) ? left.sharedInterests.length : 0;
+		const rightShared = Array.isArray(right.sharedInterests) ? right.sharedInterests.length : 0;
+		if (leftShared !== rightShared) {
+			return rightShared - leftShared;
+		}
+		return Number(right.score || 0) - Number(left.score || 0);
+	});
 }
 
 function defaultMatchingPreferences() {
@@ -836,35 +875,35 @@ function emptyState(message) {
 }
 
 function showNotice(message, tone) {
-	if (!appElements.notice) {
-		if (tone === "error") {
-			showFloatingToast(message);
-		}
-		return;
-	}
-	appElements.notice.textContent = message;
-	appElements.notice.classList.remove("is-success", "is-error");
-	if (tone === "success") {
-		appElements.notice.classList.add("is-success");
-	}
-	if (tone === "error") {
-		appElements.notice.classList.add("is-error");
-	}
+	showFloatingToast(message, tone);
 }
 
-function showFloatingToast(message) {
-	const existing = document.querySelector(".floating-toast");
-	if (existing) {
-		existing.remove();
+function showFloatingToast(message, tone = "info") {
+	const stack = notificationStack();
+	const toast = document.createElement("article");
+	toast.className = "notification-toast app-toast";
+	if (tone === "success") {
+		toast.classList.add("is-success");
 	}
+	if (tone === "error") {
+		toast.classList.add("is-error");
+	}
+	toast.innerHTML = `
+		<div>
+			<p class="section-label">${AppShared.escapeHtml(tone === "success" ? "Успешно" : tone === "error" ? "Ошибка" : "Информация")}</p>
+			<p>${AppShared.escapeHtml(message)}</p>
+		</div>
+		<button class="toast-close" aria-label="Скрыть уведомление" type="button">×</button>
+	`;
 
-	const toast = document.createElement("div");
-	toast.className = "floating-toast";
-	toast.textContent = message;
-	document.body.append(toast);
-	window.setTimeout(() => {
-		toast.remove();
-	}, 3200);
+	const dismiss = () => {
+		if (toast.isConnected) {
+			toast.remove();
+		}
+	};
+	toast.querySelector(".toast-close").addEventListener("click", dismiss);
+	stack.append(toast);
+	window.setTimeout(dismiss, 4200);
 }
 
 async function loadNotifications() {
@@ -872,7 +911,7 @@ async function loadNotifications() {
 		const notifications = await AppShared.apiRequest("/api/notifications");
 		notifications.forEach(showNotificationToast);
 	} catch (error) {
-		if (error.message.includes("401")) {
+		if (AppShared.isUnauthorizedError(error)) {
 			handleAuthFailure(error);
 		}
 	}
@@ -950,8 +989,18 @@ function logout() {
 	window.location.href = "/";
 }
 
+function handleAppLoadError(error) {
+	if (AppShared.isUnauthorizedError(error)) {
+		handleAuthFailure(error);
+		return;
+	}
+
+	console.error("App load error:", error);
+	showNotice(error.message || "Не удалось загрузить приложение после входа.", "error");
+}
+
 function handleAuthFailure(error) {
 	AppShared.clearAuth();
-	showNotice(error.message, "error");
+	console.error("Authentication error:", error);
 	window.location.href = "/auth.html?mode=login";
 }

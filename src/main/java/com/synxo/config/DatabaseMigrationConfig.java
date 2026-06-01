@@ -93,6 +93,19 @@ public class DatabaseMigrationConfig {
 		jdbcTemplate.update(
 			"UPDATE profiles SET last_activity_date = COALESCE(last_activity_date, date(COALESCE(last_active_at, CURRENT_TIMESTAMP)))"
 		);
+		jdbcTemplate.update("""
+			UPDATE profiles
+			SET last_activity_date = date(
+				CASE
+					WHEN typeof(last_activity_date) IN ('integer', 'real') THEN last_activity_date / 1000
+					WHEN instr(last_activity_date, '-') = 0 THEN CAST(last_activity_date AS INTEGER) / 1000
+					ELSE last_active_at / 1000
+				END,
+				'unixepoch'
+			)
+			WHERE last_activity_date IS NOT NULL
+			  AND (typeof(last_activity_date) IN ('integer', 'real') OR instr(last_activity_date, '-') = 0)
+			""");
 		jdbcTemplate.update(
 			"UPDATE profiles SET activity_streak_days = COALESCE(activity_streak_days, 1)"
 		);

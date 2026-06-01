@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class MatchingServiceImpl implements MatchingService {
 
 	private static final int MINIMUM_SHARED_INTERESTS = 1;
@@ -51,8 +50,9 @@ public class MatchingServiceImpl implements MatchingService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<MatchResult> findMatches(String email, MatchingMode mode, int page, int size) {
-		Profile source = markCurrentUserActive(email);
+		Profile source = getProfile(email);
 		List<MatchResult> ranked = rankMatches(source, mode);
 
 		int from = page * size;
@@ -61,8 +61,9 @@ public class MatchingServiceImpl implements MatchingService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public DailyMatchResult findDailyMatch(String email, MatchingMode mode) {
-		Profile source = markCurrentUserActive(email);
+		Profile source = getProfile(email);
 		List<MatchResult> ranked = rankMatches(source, mode);
 		if (ranked.isEmpty()) {
 			return new DailyMatchResult(LocalDate.now(), null);
@@ -75,6 +76,7 @@ public class MatchingServiceImpl implements MatchingService {
 	}
 
 	@Override
+	@Transactional
 	public MatchResult likeProfile(String email, Long targetUserId) {
 		Profile source = getProfile(email);
 		Profile candidate = profileRepository.findByUserId(targetUserId)
@@ -90,14 +92,6 @@ public class MatchingServiceImpl implements MatchingService {
 		MatchingStrategy strategy = strategies.getOrDefault(MatchingMode.RECOMMENDATION, strategies.values().iterator().next());
 		ScoredProfile scoredProfile = strategy.rank(source, List.of(candidate), context).getFirst();
 		return toMatchResult(source, scoredProfile, snapshot);
-	}
-
-	private Profile markCurrentUserActive(String email) {
-		Profile source = getProfile(email);
-		source.markActive();
-		profileRepository.save(source);
-		achievementService.evaluateForUser(source.getUser().getId());
-		return source;
 	}
 
 	private Profile getProfile(String email) {
