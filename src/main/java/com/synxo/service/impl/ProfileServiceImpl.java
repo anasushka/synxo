@@ -4,10 +4,12 @@ import com.synxo.domain.enums.ProfileStateType;
 import com.synxo.domain.exception.ResourceNotFoundException;
 import com.synxo.domain.model.Profile;
 import com.synxo.repository.ProfileRepository;
+import com.synxo.service.AchievementService;
 import com.synxo.service.LocationService;
 import com.synxo.service.NotificationService;
 import com.synxo.service.ProfileImageStorageService;
 import com.synxo.service.ProfileService;
+import com.synxo.service.command.UpdateMatchingPreferencesCommand;
 import com.synxo.service.command.UpdatePreciseLocationCommand;
 import com.synxo.service.command.UpdateProfileCommand;
 import com.synxo.service.model.Coordinates;
@@ -26,6 +28,7 @@ public class ProfileServiceImpl implements ProfileService {
 	private final NotificationService notificationService;
 	private final ProfileImageStorageService profileImageStorageService;
 	private final LocationService locationService;
+	private final AchievementService achievementService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -42,6 +45,7 @@ public class ProfileServiceImpl implements ProfileService {
 		profile.markActive();
 		Profile updatedProfile = profileRepository.save(profile);
 		notificationService.createStateChangedNotification(updatedProfile.getUser().getId(), state);
+		achievementService.evaluateForUser(updatedProfile.getUser().getId());
 		return updatedProfile;
 	}
 
@@ -55,7 +59,26 @@ public class ProfileServiceImpl implements ProfileService {
 		updateCityCoordinatesIfNeeded(profile, city);
 		profile.setInterests(ServiceUtils.normalizeInterests(command.interests()));
 		profile.markActive();
-		return profileRepository.save(profile);
+		Profile updatedProfile = profileRepository.save(profile);
+		achievementService.evaluateForUser(updatedProfile.getUser().getId());
+		return updatedProfile;
+	}
+
+	@Override
+	public Profile updateMatchingPreferences(String email, UpdateMatchingPreferencesCommand command) {
+		Profile profile = getProfileByEmail(email);
+
+		profile.setMatchingPreferencesEnabled(command.enabled());
+		profile.setInterestPriority(command.interestPriority());
+		profile.setDistancePriority(command.distancePriority());
+		profile.setIntentionPriority(command.intentionPriority());
+		profile.setActivityPriority(command.activityPriority());
+		profile.setSocialPriority(command.socialPriority());
+		profile.markActive();
+
+		Profile updatedProfile = profileRepository.save(profile);
+		achievementService.evaluateForUser(updatedProfile.getUser().getId());
+		return updatedProfile;
 	}
 
 	@Override
@@ -67,7 +90,9 @@ public class ProfileServiceImpl implements ProfileService {
 			profile.setPreciseLatitude(null);
 			profile.setPreciseLongitude(null);
 			profile.markActive();
-			return profileRepository.save(profile);
+			Profile updatedProfile = profileRepository.save(profile);
+			achievementService.evaluateForUser(updatedProfile.getUser().getId());
+			return updatedProfile;
 		}
 
 		Coordinates preciseCoordinates = locationService.preciseCoordinates(command.latitude(), command.longitude());
@@ -75,7 +100,9 @@ public class ProfileServiceImpl implements ProfileService {
 		profile.setPreciseLongitude(preciseCoordinates.longitude());
 		profile.setPreciseLocationEnabled(true);
 		profile.markActive();
-		return profileRepository.save(profile);
+		Profile updatedProfile = profileRepository.save(profile);
+		achievementService.evaluateForUser(updatedProfile.getUser().getId());
+		return updatedProfile;
 	}
 
 	@Override
@@ -84,7 +111,9 @@ public class ProfileServiceImpl implements ProfileService {
 		String photoUrl = profileImageStorageService.store(profile.getId(), file, profile.getPhotoUrl());
 		profile.setPhotoUrl(photoUrl);
 		profile.markActive();
-		return profileRepository.save(profile);
+		Profile updatedProfile = profileRepository.save(profile);
+		achievementService.evaluateForUser(updatedProfile.getUser().getId());
+		return updatedProfile;
 	}
 
 	private Profile getProfileByEmail(String email) {

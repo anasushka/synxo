@@ -1,6 +1,7 @@
 package com.synxo.web.dto.response;
 
 import com.synxo.domain.enums.ProfileStateType;
+import java.util.List;
 import java.util.Set;
 
 public record MatchResponse(
@@ -19,6 +20,7 @@ public record MatchResponse(
 	Double intentionScore,
 	Double activityScore,
 	Double socialScore,
+	List<String> whyMatched,
 	boolean likedByYou,
 	boolean likedYou,
 	boolean mutualLike

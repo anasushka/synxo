@@ -21,6 +21,14 @@ CREATE TABLE IF NOT EXISTS profiles (
 	precise_location_enabled INTEGER NOT NULL DEFAULT 0,
 	state TEXT NOT NULL CHECK (state IN ('DEEP_SEARCH', 'LIGHT_TALK', 'GHOST_MODE')),
 	last_active_at TIMESTAMP NOT NULL,
+	last_activity_date DATE NOT NULL,
+	activity_streak_days INTEGER NOT NULL DEFAULT 1,
+	matching_preferences_enabled INTEGER NOT NULL DEFAULT 0,
+	interest_priority INTEGER NOT NULL DEFAULT 100,
+	distance_priority INTEGER NOT NULL DEFAULT 100,
+	intention_priority INTEGER NOT NULL DEFAULT 100,
+	activity_priority INTEGER NOT NULL DEFAULT 100,
+	social_priority INTEGER NOT NULL DEFAULT 100,
 	FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -59,4 +67,13 @@ CREATE TABLE IF NOT EXISTS user_notifications (
 	created_at TIMESTAMP NOT NULL,
 	dismissed_at TIMESTAMP,
 	FOREIGN KEY (recipient_user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS user_achievements (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NOT NULL,
+	type TEXT NOT NULL CHECK (type IN ('FIRST_MATCH', 'FIRST_DIALOG', 'TEN_MUTUAL_LIKES', 'PROFILE_COMPLETE', 'ACTIVE_WEEK')),
+	unlocked_at TIMESTAMP NOT NULL,
+	UNIQUE (user_id, type),
+	FOREIGN KEY (user_id) REFERENCES users(id)
 );

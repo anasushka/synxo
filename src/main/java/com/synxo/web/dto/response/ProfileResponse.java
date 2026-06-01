@@ -21,6 +21,8 @@ public record ProfileResponse(
 	boolean preciseLocationEnabled,
 	ProfileStateType state,
 	Set<String> interests,
-	LocalDateTime lastActiveAt
+	LocalDateTime lastActiveAt,
+	Integer activityStreakDays,
+	MatchingPreferencesResponse matchingPreferences
 ) {
 }

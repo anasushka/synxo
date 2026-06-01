@@ -5,6 +5,8 @@ const appState = {
 	user: null,
 	profile: null,
 	matches: [],
+	dailyMatch: null,
+	achievements: [],
 	chats: [],
 	conversation: [],
 	interestCategories: [],
@@ -26,6 +28,8 @@ const appElements = {
 	strategyButtons: Array.from(document.querySelectorAll("[data-strategy]")),
 	homeHero: document.getElementById("home-hero"),
 	homeStats: document.getElementById("home-stats"),
+	dailyMatchPanel: document.getElementById("daily-match-panel"),
+	achievementList: document.getElementById("achievement-list"),
 	discoverList: document.getElementById("discover-list"),
 	chatList: document.getElementById("chat-list"),
 	chatHeader: document.getElementById("chat-header"),
@@ -43,6 +47,17 @@ const appElements = {
 	profileLocationStatus: document.getElementById("profile-location-status"),
 	detectLocationButton: document.getElementById("detect-location-button"),
 	disableLocationButton: document.getElementById("disable-location-button"),
+	matchingPreferencesEnabled: document.getElementById("matching-preferences-enabled"),
+	interestPriority: document.getElementById("interest-priority"),
+	distancePriority: document.getElementById("distance-priority"),
+	intentionPriority: document.getElementById("intention-priority"),
+	activityPriority: document.getElementById("activity-priority"),
+	socialPriority: document.getElementById("social-priority"),
+	interestPriorityValue: document.getElementById("interest-priority-value"),
+	distancePriorityValue: document.getElementById("distance-priority-value"),
+	intentionPriorityValue: document.getElementById("intention-priority-value"),
+	activityPriorityValue: document.getElementById("activity-priority-value"),
+	socialPriorityValue: document.getElementById("social-priority-value"),
 	profileInterestGroups: document.getElementById("profile-interest-groups"),
 	photoForm: document.getElementById("photo-form"),
 	profilePhotoFile: document.getElementById("profile-photo-file")
@@ -81,8 +96,9 @@ function bindAppEvents() {
 		button.addEventListener("click", async () => {
 			appState.strategy = button.dataset.strategy;
 			renderStrategyButtons();
-			await loadMatches();
+			await Promise.all([loadMatches(), loadDailyMatch()]);
 			renderDiscover();
+			renderHome();
 		});
 	});
 
@@ -128,6 +144,22 @@ function bindAppEvents() {
 		await disablePreciseLocation();
 	});
 
+	[
+		[appElements.interestPriority, appElements.interestPriorityValue],
+		[appElements.distancePriority, appElements.distancePriorityValue],
+		[appElements.intentionPriority, appElements.intentionPriorityValue],
+		[appElements.activityPriority, appElements.activityPriorityValue],
+		[appElements.socialPriority, appElements.socialPriorityValue]
+	].forEach(([input, valueNode]) => {
+		input.addEventListener("input", () => {
+			valueNode.textContent = input.value;
+		});
+	});
+
+	appElements.matchingPreferencesEnabled.addEventListener("change", () => {
+		renderMatchingPreferenceState();
+	});
+
 	document.addEventListener("click", async event => {
 		const actionButton = event.target.closest("[data-action]");
 		if (!actionButton) {
@@ -163,7 +195,9 @@ async function refreshApp(showBanner) {
 
 	await Promise.all([
 		loadMatches(),
-		loadChats()
+		loadDailyMatch(),
+		loadChats(),
+		loadAchievements()
 	]);
 
 	if (appState.selectedChatUserId) {
@@ -178,6 +212,10 @@ async function refreshApp(showBanner) {
 
 async function loadMatches() {
 	appState.matches = await AppShared.apiRequest("/api/matches?strategy=" + encodeURIComponent(appState.strategy));
+}
+
+async function loadDailyMatch() {
+	appState.dailyMatch = await AppShared.apiRequest("/api/matches/daily?strategy=" + encodeURIComponent(appState.strategy));
 }
 
 async function loadChats() {
@@ -267,6 +305,18 @@ async function saveProfile() {
 		await AppShared.apiRequest("/api/profiles/me/state", {
 			method: "PATCH",
 			body: { state: appElements.profileState.value }
+		});
+
+		await AppShared.apiRequest("/api/profiles/me/matching-preferences", {
+			method: "PUT",
+			body: {
+				enabled: appElements.matchingPreferencesEnabled.checked,
+				interestPriority: Number(appElements.interestPriority.value),
+				distancePriority: Number(appElements.distancePriority.value),
+				intentionPriority: Number(appElements.intentionPriority.value),
+				activityPriority: Number(appElements.activityPriority.value),
+				socialPriority: Number(appElements.socialPriority.value)
+			}
 		});
 
 		await refreshApp(false);
@@ -388,11 +438,14 @@ function renderStrategyButtons() {
 function renderHome() {
 	const pendingLikes = appState.matches.filter(match => match.likedYou && !match.likedByYou).length;
 	const mutualLikes = appState.matches.filter(match => match.mutualLike).length;
+	const personalizedCopy = appState.profile?.matchingPreferences?.enabled
+		? "Лента учитывает твои персональные веса совместимости."
+		: "Лента работает по прозрачной формуле совместимости.";
 
 	appElements.homeHero.innerHTML = `
 		<p class="eyebrow">Текущая сессия</p>
 		<h1>${AppShared.escapeHtml(appState.user.displayName)}, здесь видны люди, с которыми у тебя уже есть общие интересы.</h1>
-		<p class="hero-text">Сначала отметь понравившийся профиль в ленте. Если симпатия взаимная, человек появится в чатах, и можно будет начать полноценную переписку.</p>
+		<p class="hero-text">Сначала отметь понравившийся профиль в ленте. Если симпатия взаимная, человек появится в чатах, и можно будет начать полноценную переписку. ${AppShared.escapeHtml(personalizedCopy)}</p>
 		<div class="hero-actions">
 			<button class="primary-button" data-action="go-discover" type="button">Открыть ленту</button>
 			${mutualLikes ? '<button class="secondary-button" data-action="go-chats" type="button">Перейти в чаты</button>' : ""}
@@ -415,6 +468,58 @@ function renderHome() {
 		<div class="stat-card">
 			<p class="muted">Открытые чаты</p>
 			<strong>${appState.chats.length}</strong>
+		</div>
+	`;
+
+	renderDailyMatch();
+	renderAchievements();
+}
+
+function renderDailyMatch() {
+	const payload = appState.dailyMatch;
+	const match = payload && payload.match ? payload.match : null;
+
+	if (!match) {
+		appElements.dailyMatchPanel.innerHTML = `
+			<div class="section-header tight">
+				<div>
+					<p class="eyebrow">Daily Match</p>
+					<h2>Кандидат дня</h2>
+				</div>
+			</div>
+			${emptyState("Сегодня система не нашла достаточно релевантного кандидата. Попробуй обновить интересы или зайти позже.")}
+		`;
+		return;
+	}
+
+	appElements.dailyMatchPanel.innerHTML = `
+		<div class="section-header tight">
+			<div>
+				<p class="eyebrow">Daily Match</p>
+				<h2>Кандидат дня</h2>
+			</div>
+			<span class="profile-tag">${AppShared.escapeHtml(String(payload.generatedFor))}</span>
+		</div>
+		<div class="daily-match-layout">
+			${matchPhotoMarkup(match)}
+			<div class="daily-match-copy">
+				<div class="match-copy-top">
+					<div>
+						<h3>${AppShared.escapeHtml(match.displayName)}</h3>
+						<p class="muted">${AppShared.escapeHtml(match.city)} · ${AppShared.escapeHtml(String(match.age))} лет</p>
+					</div>
+					<div class="score-stack">
+						<strong>${AppShared.escapeHtml(Math.round(match.score || 0) + "%")}</strong>
+						<span>${match.distanceKm == null ? "n/a" : AppShared.escapeHtml(match.distanceKm.toFixed(1) + " km")}</span>
+					</div>
+				</div>
+				<div class="reason-list">
+					${(match.whyMatched || []).map(reason => `<span class="reason-chip">${AppShared.escapeHtml(reason)}</span>`).join("")}
+				</div>
+				<div class="form-actions">
+					${renderMatchAction(match)}
+				</div>
+			</div>
 		</div>
 	`;
 }
@@ -453,6 +558,11 @@ function renderDiscover() {
 						<span>Формат ${formatScore(match.intentionScore)}</span>
 						<span>Активность ${formatScore(match.activityScore)}</span>
 						<span>Симпатия ${formatScore(match.socialScore)}</span>
+					</div>
+
+					<div>
+						<p class="section-label">Почему вы совпали</p>
+						<div class="reason-list">${(match.whyMatched || []).map(reason => `<span class="reason-chip">${AppShared.escapeHtml(reason)}</span>`).join("")}</div>
 					</div>
 
 					<div class="chip-row">
@@ -538,6 +648,8 @@ function renderChats() {
 }
 
 function renderProfile() {
+	const matchingPreferences = appState.profile.matchingPreferences || defaultMatchingPreferences();
+
 	appElements.profilePhotoPanel.innerHTML = `
 		<div class="profile-photo-panel">
 			${avatarMarkup(appState.user.displayName, appState.profile.photoUrl, "xlarge")}
@@ -558,11 +670,20 @@ function renderProfile() {
 			<span class="profile-tag"><strong>Возраст:</strong>&nbsp;${AppShared.escapeHtml(String(appState.user.age))}</span>
 			<span class="profile-tag"><strong>Город:</strong>&nbsp;${AppShared.escapeHtml(appState.profile.city)}</span>
 			<span class="profile-tag"><strong>Статус:</strong>&nbsp;${AppShared.escapeHtml(appState.profile.state)}</span>
+			<span class="profile-tag"><strong>Стрик:</strong>&nbsp;${AppShared.escapeHtml(String(appState.profile.activityStreakDays || 0))} дн.</span>
 		</div>
 		<div class="profile-section">
 			<p class="section-label">Интересы</p>
 			<div class="profile-badges">
 				${appState.profile.interests.map(interest => `<span class="profile-tag">${AppShared.escapeHtml(interest)}</span>`).join("")}
+			</div>
+		</div>
+		<div class="profile-section">
+			<p class="section-label">Открытые достижения</p>
+			<div class="reason-list">
+				${appState.achievements.length
+					? appState.achievements.map(achievement => `<span class="reason-chip">${AppShared.escapeHtml(achievement.title)}</span>`).join("")
+					: '<span class="muted">Пока нет открытых достижений.</span>'}
 			</div>
 		</div>
 	`;
@@ -573,7 +694,37 @@ function renderProfile() {
 	appElements.profileBio.value = appState.profile.bio || "";
 	appElements.profileLocationStatus.textContent = locationStatusText(appState.profile);
 	appElements.disableLocationButton.disabled = !appState.profile.preciseLocationEnabled;
+	appElements.matchingPreferencesEnabled.checked = Boolean(matchingPreferences.enabled);
+	appElements.interestPriority.value = matchingPreferences.interestPriority ?? 100;
+	appElements.distancePriority.value = matchingPreferences.distancePriority ?? 100;
+	appElements.intentionPriority.value = matchingPreferences.intentionPriority ?? 100;
+	appElements.activityPriority.value = matchingPreferences.activityPriority ?? 100;
+	appElements.socialPriority.value = matchingPreferences.socialPriority ?? 100;
+	syncPriorityLabels();
+	renderMatchingPreferenceState();
 	renderInterestGroups(appElements.profileInterestGroups, appState.interestCategories, appState.profile.interests || []);
+}
+
+function renderAchievements() {
+	if (!appElements.achievementList) {
+		return;
+	}
+
+	if (!appState.achievements.length) {
+		appElements.achievementList.innerHTML = emptyState("Пока нет открытых бейджей. Они появятся после первых заметных шагов в приложении.");
+		return;
+	}
+
+	appElements.achievementList.innerHTML = appState.achievements.map(achievement => `
+		<article class="achievement-item">
+			<div class="achievement-badge">${AppShared.escapeHtml(achievement.title.charAt(0))}</div>
+			<div class="achievement-copy">
+				<strong>${AppShared.escapeHtml(achievement.title)}</strong>
+				<p>${AppShared.escapeHtml(achievement.description)}</p>
+				<time>${AppShared.escapeHtml(AppShared.formatDate(achievement.unlockedAt))}</time>
+			</div>
+		</article>
+	`).join("");
 }
 
 function renderInterestGroups(container, categories, selectedValues) {
@@ -620,6 +771,38 @@ function previewMessage(message) {
 
 function formatScore(value) {
 	return Math.round(Number(value || 0)) + "%";
+}
+
+function defaultMatchingPreferences() {
+	return {
+		enabled: false,
+		interestPriority: 100,
+		distancePriority: 100,
+		intentionPriority: 100,
+		activityPriority: 100,
+		socialPriority: 100
+	};
+}
+
+function syncPriorityLabels() {
+	appElements.interestPriorityValue.textContent = appElements.interestPriority.value;
+	appElements.distancePriorityValue.textContent = appElements.distancePriority.value;
+	appElements.intentionPriorityValue.textContent = appElements.intentionPriority.value;
+	appElements.activityPriorityValue.textContent = appElements.activityPriority.value;
+	appElements.socialPriorityValue.textContent = appElements.socialPriority.value;
+}
+
+function renderMatchingPreferenceState() {
+	const enabled = appElements.matchingPreferencesEnabled.checked;
+	[
+		appElements.interestPriority,
+		appElements.distancePriority,
+		appElements.intentionPriority,
+		appElements.activityPriority,
+		appElements.socialPriority
+	].forEach(input => {
+		input.disabled = !enabled;
+	});
 }
 
 function locationStatusText(profile) {
@@ -693,6 +876,10 @@ async function loadNotifications() {
 			handleAuthFailure(error);
 		}
 	}
+}
+
+async function loadAchievements() {
+	appState.achievements = await AppShared.apiRequest("/api/achievements");
 }
 
 function startNotificationPolling() {

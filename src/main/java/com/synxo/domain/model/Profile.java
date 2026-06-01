@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,6 +94,38 @@ public class Profile {
 	@Builder.Default
 	private LocalDateTime lastActiveAt = LocalDateTime.now();
 
+	@Column(nullable = false)
+	@Builder.Default
+	private LocalDate lastActivityDate = LocalDate.now();
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer activityStreakDays = 1;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Boolean matchingPreferencesEnabled = false;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer interestPriority = 100;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer distancePriority = 100;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer intentionPriority = 100;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer activityPriority = 100;
+
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer socialPriority = 100;
+
 	public List<Profile> search(List<Profile> candidates) {
 		return resolveState().search(this, new ArrayList<>(candidates));
 	}
@@ -143,7 +176,23 @@ public class Profile {
 	}
 
 	public void markActive() {
+		LocalDate today = LocalDate.now();
+		if (lastActivityDate == null) {
+			activityStreakDays = 1;
+		} else if (!today.equals(lastActivityDate)) {
+			boolean consecutiveDay = today.minusDays(1).equals(lastActivityDate);
+			activityStreakDays = consecutiveDay ? normalizeStreakDays() + 1 : 1;
+		}
+		lastActivityDate = today;
 		lastActiveAt = LocalDateTime.now();
+	}
+
+	public boolean hasPersonalizedMatching() {
+		return Boolean.TRUE.equals(matchingPreferencesEnabled);
+	}
+
+	private int normalizeStreakDays() {
+		return activityStreakDays == null || activityStreakDays < 1 ? 1 : activityStreakDays;
 	}
 
 	public Double effectiveLatitude() {
@@ -162,14 +211,6 @@ public class Profile {
 
 	public boolean hasPreciseLocation() {
 		return Boolean.TRUE.equals(preciseLocationEnabled) && preciseLatitude != null && preciseLongitude != null;
-	}
-
-	public int minimumSharedInterestsForSearch() {
-		return resolveState().minimumSharedInterests();
-	}
-
-	public boolean requiresRecentlyActiveCandidates() {
-		return resolveState().requiresRecentlyActiveCandidates();
 	}
 
 	private ProfileState resolveState() {

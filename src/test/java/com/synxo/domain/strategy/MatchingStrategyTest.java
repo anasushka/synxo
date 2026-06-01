@@ -40,6 +40,26 @@ class MatchingStrategyTest {
 		assertThat(ranked).containsExactly(nearest, farthest);
 	}
 
+	@Test
+	void personalizedWeightsCanShiftRecommendationTowardDistance() {
+		Profile source = profile(1L, 53.9, 27.56, Set.of("music", "travel", "books"));
+		source.setMatchingPreferencesEnabled(true);
+		source.setInterestPriority(0);
+		source.setDistancePriority(100);
+		source.setIntentionPriority(0);
+		source.setActivityPriority(0);
+		source.setSocialPriority(0);
+
+		Profile nearby = profile(2L, 53.9002, 27.5602, Set.of("music"));
+		Profile farButAligned = profile(3L, 55.75, 37.61, Set.of("music", "travel"));
+
+		List<Profile> ranked = recommendationStrategy.rank(source, List.of(farButAligned, nearby), MatchingContext.empty()).stream()
+			.map(ScoredProfile::profile)
+			.toList();
+
+		assertThat(ranked).containsExactly(nearby, farButAligned);
+	}
+
 	private Profile profile(Long id, double latitude, double longitude, Set<String> interests) {
 		return Profile.builder()
 			.id(id)

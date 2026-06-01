@@ -21,4 +21,15 @@ public interface ProfileLikeRepository extends JpaRepository<ProfileLike, Long> 
 		where pl.liked.id = :userId
 		""")
 	Set<Long> findLikedByUserIds(@Param("userId") Long userId);
+
+	@Query("""
+		select count(pl) from ProfileLike pl
+		where pl.liker.id = :userId
+		  and exists (
+			select 1 from ProfileLike reverseLike
+			where reverseLike.liker.id = pl.liked.id
+			  and reverseLike.liked.id = :userId
+		  )
+		""")
+	long countMutualMatches(@Param("userId") Long userId);
 }

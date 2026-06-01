@@ -9,8 +9,6 @@ public class LightTalkState implements ProfileState {
 	@Override
 	public List<Profile> search(Profile current, List<Profile> candidates) {
 		return visibleCandidates(current, candidates)
-			.filter(Profile::isRecentlyActive)
-			.filter(candidate -> current.commonInterestCount(candidate) >= 1)
 			.toList();
 	}
 
@@ -22,15 +20,5 @@ public class LightTalkState implements ProfileState {
 	@Override
 	public ProfileStateType getType() {
 		return ProfileStateType.LIGHT_TALK;
-	}
-
-	@Override
-	public int minimumSharedInterests() {
-		return 1;
-	}
-
-	@Override
-	public boolean requiresRecentlyActiveCandidates() {
-		return true;
 	}
 }

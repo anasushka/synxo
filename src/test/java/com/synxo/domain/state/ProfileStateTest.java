@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProfileStateTest {
 
 	@Test
-	void deepSearchUsesStrictFilteringAndSkipsGhosts() {
+	void deepSearchShowsVisibleProfilesAndSkipsGhosts() {
 		Profile source = profile(1L, ProfileStateType.DEEP_SEARCH, Set.of("music", "travel", "books"), 0, 53.9, 27.56);
 		Profile strongCandidate = profile(2L, ProfileStateType.DEEP_SEARCH, Set.of("music", "travel"), 0, 53.91, 27.57);
 		Profile weakCandidate = profile(3L, ProfileStateType.DEEP_SEARCH, Set.of("music"), 0, 53.92, 27.58);
@@ -20,15 +20,15 @@ class ProfileStateTest {
 
 		List<Profile> result = source.search(List.of(strongCandidate, weakCandidate, hiddenGhost));
 
-		assertThat(result).containsExactly(strongCandidate);
+		assertThat(result).containsExactly(strongCandidate, weakCandidate);
 		assertThat(hiddenGhost.isDisplayedInFeed(source)).isFalse();
 	}
 
 	@Test
-	void lightTalkShowsOnlyActiveProfilesWithSharedHobby() {
+	void lightTalkProfilesAreDisplayedOnlyWhenRecentlyActive() {
 		Profile source = profile(1L, ProfileStateType.LIGHT_TALK, Set.of("music", "coffee"), 0, 53.9, 27.56);
 		Profile activeCandidate = profile(2L, ProfileStateType.DEEP_SEARCH, Set.of("music"), 0, 53.9, 27.57);
-		Profile inactiveCandidate = profile(3L, ProfileStateType.DEEP_SEARCH, Set.of("music", "coffee"), 10, 53.9, 27.58);
+		Profile inactiveCandidate = profile(3L, ProfileStateType.LIGHT_TALK, Set.of("music", "coffee"), 10, 53.9, 27.58);
 
 		List<Profile> result = source.search(List.of(activeCandidate, inactiveCandidate));
 

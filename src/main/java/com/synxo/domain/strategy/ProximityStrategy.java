@@ -20,8 +20,9 @@ public class ProximityStrategy implements MatchingStrategy {
 
 	@Override
 	public List<ScoredProfile> rank(Profile source, List<Profile> candidates, MatchingContext context) {
+		ScoreWeights weights = WEIGHTS.personalized(source);
 		return candidates.stream()
-			.map(candidate -> new ScoredProfile(candidate, scorer.score(source, candidate, context, WEIGHTS)))
+			.map(candidate -> new ScoredProfile(candidate, scorer.score(source, candidate, context, weights)))
 			.sorted(Comparator
 				.comparingDouble((ScoredProfile scoredProfile) -> scoredProfile.score().total())
 				.reversed()

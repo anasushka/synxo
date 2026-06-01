@@ -25,4 +25,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 		order by m.createdAt desc, m.id desc
 		""")
 	List<ChatMessage> findInboxMessages(@Param("userId") Long userId);
+
+	long countBySenderId(Long senderId);
 }

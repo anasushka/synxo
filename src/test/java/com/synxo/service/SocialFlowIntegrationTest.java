@@ -84,7 +84,37 @@ class SocialFlowIntegrationTest {
 			.containsExactly("Привет");
 	}
 
+	@Test
+	void feedIsSymmetricForVisibleProfilesWithSharedInterest() {
+		register(
+			"deep@example.com",
+			"Deep",
+			Set.of("Кошки", "Рок", "Новые друзья"),
+			ProfileStateType.DEEP_SEARCH
+		);
+		register(
+			"light@example.com",
+			"Light",
+			Set.of("Кошки", "Суши", "Новые друзья"),
+			ProfileStateType.LIGHT_TALK
+		);
+
+		Long deepId = authService.getCurrentUser("deep@example.com").getId();
+		Long lightId = authService.getCurrentUser("light@example.com").getId();
+
+		assertThat(matchingService.findMatches("deep@example.com", MatchingMode.RECOMMENDATION, 0, 20))
+			.extracting(MatchResult::userId)
+			.contains(lightId);
+		assertThat(matchingService.findMatches("light@example.com", MatchingMode.RECOMMENDATION, 0, 20))
+			.extracting(MatchResult::userId)
+			.contains(deepId);
+	}
+
 	private void register(String email, String displayName, Set<String> interests) {
+		register(email, displayName, interests, ProfileStateType.LIGHT_TALK);
+	}
+
+	private void register(String email, String displayName, Set<String> interests, ProfileStateType state) {
 		authService.register(new RegisterUserCommand(
 			email,
 			"password123",
@@ -93,7 +123,7 @@ class SocialFlowIntegrationTest {
 			"Открыта к общению",
 			"Minsk",
 			interests,
-			ProfileStateType.LIGHT_TALK
+			state
 		));
 	}
 }

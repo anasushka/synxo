@@ -1,0 +1,112 @@
+@startuml
+title Паттерн Strategy в проекте Synxo
+
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+class MatchingServiceImpl {
+  - strategies: Map<MatchingMode, MatchingStrategy>
+  + findMatches(email, mode, page, size): List<MatchResult>
+  + likeProfile(email, targetUserId): MatchResult
+}
+
+interface MatchingStrategy {
+  + getMode(): MatchingMode
+  + rank(source, candidates, context): List<ScoredProfile>
+}
+
+class RecommendationStrategy {
+  - WEIGHTS = (45, 15, 20, 10, 10)
+  - scorer: CompatibilityScorer
+  + rank(source, candidates, context): List<ScoredProfile>
+}
+
+class ProximityStrategy {
+  - WEIGHTS = (25, 45, 15, 5, 10)
+  - scorer: CompatibilityScorer
+  + rank(source, candidates, context): List<ScoredProfile>
+}
+
+class CompatibilityScorer {
+  + score(source, candidate, context, weights): MatchScore
+  - interestScore(...): double
+  - distanceScore(...): double
+  - intentionScore(...): double
+  - activityScore(...): double
+  - socialScore(...): double
+}
+
+class MatchingContext {
+  + likedByYou(profile): boolean
+  + likedYou(profile): boolean
+  + mutualLike(profile): boolean
+}
+
+class ScoreWeights {
+  + interest: double
+  + distance: double
+  + intention: double
+  + activity: double
+  + social: double
+}
+
+class ScoredProfile {
+  + profile: Profile
+  + score: MatchScore
+}
+
+class MatchScore {
+  + total: double
+  + interest: double
+  + distance: double
+  + intention: double
+  + activity: double
+  + social: double
+}
+
+class Profile
+
+enum MatchingMode {
+  RECOMMENDATION
+  PROXIMITY
+}
+
+MatchingServiceImpl --> MatchingStrategy : выбирает стратегию
+MatchingServiceImpl --> MatchingMode
+MatchingServiceImpl --> MatchingContext
+
+MatchingStrategy <|.. RecommendationStrategy
+MatchingStrategy <|.. ProximityStrategy
+
+RecommendationStrategy --> CompatibilityScorer
+RecommendationStrategy --> ScoreWeights
+RecommendationStrategy --> ScoredProfile
+
+ProximityStrategy --> CompatibilityScorer
+ProximityStrategy --> ScoreWeights
+ProximityStrategy --> ScoredProfile
+
+CompatibilityScorer --> MatchScore
+CompatibilityScorer --> MatchingContext
+CompatibilityScorer --> Profile
+ScoredProfile --> Profile
+ScoredProfile --> MatchScore
+
+note right of RecommendationStrategy
+  Делает больший акцент
+  на общих интересах.
+end note
+
+note right of ProximityStrategy
+  Делает больший акцент
+  на географической близости.
+end note
+
+note bottom of MatchingServiceImpl
+  Контекстом паттерна Strategy является MatchingServiceImpl.
+  Он выбирает алгоритм ранжирования во время выполнения.
+end note
+
+@enduml

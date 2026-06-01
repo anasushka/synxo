@@ -34,6 +34,18 @@
 					<div class="hero-copy" id="home-hero"></div>
 				</div>
 				<div class="stats-grid" id="home-stats"></div>
+				<div class="home-focus-grid">
+					<section class="card home-feature-card" id="daily-match-panel"></section>
+					<section class="card home-feature-card">
+						<div class="section-header tight">
+							<div>
+								<p class="eyebrow">Достижения</p>
+								<h2>Твои бейджи</h2>
+							</div>
+						</div>
+						<div class="achievement-list" id="achievement-list"></div>
+					</section>
+				</div>
 			</section>
 
 			<section class="view-section" id="view-discover">
@@ -138,6 +150,38 @@
 								<div class="form-actions">
 									<button class="secondary-button" id="detect-location-button" type="button">Определить точную локацию</button>
 									<button class="secondary-button" id="disable-location-button" type="button">Отключить точную локацию</button>
+								</div>
+							</div>
+							<div class="location-panel">
+								<div>
+									<p class="section-label">Настройка алгоритма мэтчинга</p>
+									<p class="muted">Можно включить персональные веса и явно указать, что для тебя важнее в подборе.</p>
+								</div>
+								<label class="toggle-row">
+									<input id="matching-preferences-enabled" type="checkbox">
+									<span>Использовать персональные веса совместимости</span>
+								</label>
+								<div class="preference-sliders" id="matching-preferences-panel">
+									<label class="slider-field">
+										<span>Интересы <strong id="interest-priority-value">100</strong></span>
+										<input id="interest-priority" min="0" max="100" step="5" type="range">
+									</label>
+									<label class="slider-field">
+										<span>Расстояние <strong id="distance-priority-value">100</strong></span>
+										<input id="distance-priority" min="0" max="100" step="5" type="range">
+									</label>
+									<label class="slider-field">
+										<span>Формат общения <strong id="intention-priority-value">100</strong></span>
+										<input id="intention-priority" min="0" max="100" step="5" type="range">
+									</label>
+									<label class="slider-field">
+										<span>Недавняя активность <strong id="activity-priority-value">100</strong></span>
+										<input id="activity-priority" min="0" max="100" step="5" type="range">
+									</label>
+									<label class="slider-field">
+										<span>Социальный сигнал <strong id="social-priority-value">100</strong></span>
+										<input id="social-priority" min="0" max="100" step="5" type="range">
+									</label>
 								</div>
 							</div>
 							<div>

@@ -1,0 +1,79 @@
+@startuml
+title Паттерн State в проекте Synxo
+
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+class Profile {
+  - state: ProfileStateType
+  + search(candidates): List<Profile>
+  + isDisplayedInFeed(viewer): boolean
+  - resolveState(): ProfileState
+}
+
+interface ProfileState {
+  + search(current, candidates): List<Profile>
+  + isDisplayedInFeed(current, viewer): boolean
+  + getType(): ProfileStateType
+}
+
+class DeepSearchState {
+  + search(current, candidates): List<Profile>
+  + isDisplayedInFeed(current, viewer): boolean
+}
+
+class LightTalkState {
+  + search(current, candidates): List<Profile>
+  + isDisplayedInFeed(current, viewer): boolean
+}
+
+class GhostModeState {
+  + search(current, candidates): List<Profile>
+  + isDisplayedInFeed(current, viewer): boolean
+}
+
+class ProfileStates {
+  - STATES: Map<ProfileStateType, ProfileState>
+  + from(type): ProfileState
+}
+
+enum ProfileStateType {
+  DEEP_SEARCH
+  LIGHT_TALK
+  GHOST_MODE
+}
+
+Profile --> ProfileState : делегирует поведение
+Profile --> ProfileStates : запрашивает объект состояния
+Profile --> ProfileStateType : хранит текущее состояние
+ProfileStates --> ProfileState : возвращает реализацию
+ProfileStates --> ProfileStateType
+
+ProfileState <|.. DeepSearchState
+ProfileState <|.. LightTalkState
+ProfileState <|.. GhostModeState
+
+note right of DeepSearchState
+  Обычный режим поиска:
+  профиль виден в ленте.
+end note
+
+note right of LightTalkState
+  Профиль виден только
+  при недавней активности.
+end note
+
+note right of GhostModeState
+  Профиль не показывается
+  другим пользователям.
+end note
+
+note bottom of Profile
+  Контекстом паттерна State является Profile.
+  Поведение меняется не через if/else,
+  а через объект текущего состояния.
+end note
+
+@enduml

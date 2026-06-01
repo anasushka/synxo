@@ -1,7 +1,9 @@
 package com.synxo.web.controller;
 
+import com.synxo.service.command.UpdateMatchingPreferencesCommand;
 import com.synxo.domain.model.Profile;
 import com.synxo.service.ProfileService;
+import com.synxo.web.dto.request.UpdateMatchingPreferencesRequest;
 import com.synxo.web.dto.request.UpdatePreciseLocationRequest;
 import com.synxo.web.dto.request.UpdateProfileRequest;
 import com.synxo.web.dto.request.UpdateProfileStateRequest;
@@ -49,6 +51,16 @@ public class ProfileController {
 		@Valid @RequestBody UpdateProfileStateRequest request
 	) {
 		Profile profile = profileService.changeState(authentication.getName(), request.state());
+		return apiMapper.toProfileResponse(profile);
+	}
+
+	@PutMapping("/me/matching-preferences")
+	public ProfileResponse updateMatchingPreferences(
+		Authentication authentication,
+		@Valid @RequestBody UpdateMatchingPreferencesRequest request
+	) {
+		UpdateMatchingPreferencesCommand command = apiMapper.toCommand(request);
+		Profile profile = profileService.updateMatchingPreferences(authentication.getName(), command);
 		return apiMapper.toProfileResponse(profile);
 	}
 

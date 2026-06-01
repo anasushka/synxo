@@ -8,6 +8,7 @@ import com.synxo.domain.model.User;
 import com.synxo.repository.ChatMessageRepository;
 import com.synxo.repository.ProfileRepository;
 import com.synxo.repository.UserRepository;
+import com.synxo.service.AchievementService;
 import com.synxo.service.ChatService;
 import com.synxo.service.NotificationService;
 import com.synxo.service.ProfileLikeService;
@@ -35,6 +36,7 @@ public class ChatServiceImpl implements ChatService {
 	private final ProfileRepository profileRepository;
 	private final NotificationService notificationService;
 	private final ProfileLikeService profileLikeService;
+	private final AchievementService achievementService;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -96,6 +98,7 @@ public class ChatServiceImpl implements ChatService {
 
 		markProfileActive(sender.getId());
 		notificationService.createMessageNotification(recipient.getId(), sender.getId(), savedMessage.getContent());
+		achievementService.evaluateForUser(sender.getId());
 
 		return toMessageView(sender, savedMessage);
 	}

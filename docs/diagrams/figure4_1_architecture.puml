@@ -1,0 +1,106 @@
+@startuml
+title Общая архитектура приложения Synxo
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+
+actor "Пользователь" as User
+
+package "Клиентский уровень" {
+  component "Браузер" as Browser
+  component "HTML / CSS / JavaScript\nindex.html, auth.html, app.html" as Frontend
+  component "Geolocation API\n(точная геолокация)" as GeoApi
+}
+
+package "Веб-слой" {
+  component "Spring Security\nHTTP Basic" as Security
+  component "REST-контроллеры\nAuth, Profile, Matching,\nChat, Notification, Interest" as Controllers
+  component "DTO + ApiMapper\nValidation + Exception Handler" as WebSupport
+}
+
+package "Сервисный слой" {
+  component "AuthService" as AuthService
+  component "ProfileService" as ProfileService
+  component "MatchingService" as MatchingService
+  component "ProfileLikeService" as LikeService
+  component "ChatService" as ChatService
+  component "NotificationService" as NotificationService
+  component "LocationService" as LocationService
+  component "ProfileImageStorageService" as ImageService
+}
+
+package "Доменный слой" {
+  component "Сущности\nUser, Profile, ProfileLike,\nChatMessage, UserNotification" as DomainModel
+  component "State\nDeepSearch, LightTalk, GhostMode" as StateLayer
+  component "Strategy\nRecommendation, Proximity,\nCompatibilityScorer" as StrategyLayer
+  component "Команды и модели\nRegisterUserCommand,\nUpdateProfileCommand,\nMatchResult и др." as DomainModels
+}
+
+package "Инфраструктура и хранение" {
+  component "Spring Data JPA\nRepositories" as Repositories
+  database "SQLite" as Db
+  component "Файловое хранилище\nфотографий" as FileStorage
+  component "Nominatim / OpenStreetMap\nгеокодинг города" as Nominatim
+  component "Migration / Config\nschema.sql, config classes" as InfraConfig
+}
+
+User --> Browser
+Browser --> Frontend
+Frontend --> GeoApi : получает координаты\nпо согласию пользователя
+Frontend --> Security
+Security --> Controllers
+Controllers --> WebSupport
+Controllers --> AuthService
+Controllers --> ProfileService
+Controllers --> MatchingService
+Controllers --> LikeService
+Controllers --> ChatService
+Controllers --> NotificationService
+
+ProfileService --> LocationService
+ProfileService --> ImageService
+MatchingService --> StrategyLayer
+MatchingService --> StateLayer
+
+AuthService --> DomainModel
+ProfileService --> DomainModel
+MatchingService --> DomainModel
+LikeService --> DomainModel
+ChatService --> DomainModel
+NotificationService --> DomainModel
+StateLayer --> DomainModel
+StrategyLayer --> DomainModel
+DomainModels --> DomainModel
+
+AuthService --> Repositories
+ProfileService --> Repositories
+MatchingService --> Repositories
+LikeService --> Repositories
+ChatService --> Repositories
+NotificationService --> Repositories
+
+Repositories --> Db
+ImageService --> FileStorage
+LocationService --> Nominatim
+InfraConfig --> Db
+InfraConfig --> Repositories
+
+note right of StrategyLayer
+  Формирует прозрачный score
+  совместимости по нескольким факторам.
+end note
+
+note right of StateLayer
+  Управляет видимостью профиля
+  в зависимости от режима работы.
+end note
+
+note bottom of Frontend
+  Клиент показывает ленту, чаты, профиль,
+  регистрацию и всплывающие уведомления.
+end note
+
+@enduml

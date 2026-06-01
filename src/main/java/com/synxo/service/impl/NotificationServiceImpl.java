@@ -28,16 +28,16 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	public void createWelcomeNotification(Long recipientUserId) {
-		save(notificationFactory.createSystemNotification(recipientUserId, "Добро пожаловать в Synxo."));
+		createSystemNotification(recipientUserId, "Добро пожаловать в Synxo.");
 		log.info("Prepared welcome notification for user {}", recipientUserId);
 	}
 
 	@Override
 	public void createStateChangedNotification(Long recipientUserId, ProfileStateType state) {
-		save(notificationFactory.createSystemNotification(
+		createSystemNotification(
 			recipientUserId,
 			"Состояние профиля обновлено: %s.".formatted(state.name())
-		));
+		);
 		log.info("Prepared state update notification for user {}", recipientUserId);
 	}
 
@@ -51,6 +51,12 @@ public class NotificationServiceImpl implements NotificationService {
 	public void createMessageNotification(Long recipientUserId, Long senderUserId, String message) {
 		save(notificationFactory.createMessageNotification(recipientUserId, senderUserId, message));
 		log.info("Prepared message notification for user {}", recipientUserId);
+	}
+
+	@Override
+	public void createSystemNotification(Long recipientUserId, String message) {
+		save(notificationFactory.createSystemNotification(recipientUserId, message));
+		log.info("Prepared system notification for user {}", recipientUserId);
 	}
 
 	@Override

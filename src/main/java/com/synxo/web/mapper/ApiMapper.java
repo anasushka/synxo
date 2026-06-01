@@ -3,20 +3,27 @@ package com.synxo.web.mapper;
 import com.synxo.domain.model.Profile;
 import com.synxo.domain.model.User;
 import com.synxo.domain.model.UserNotification;
+import com.synxo.service.command.UpdateMatchingPreferencesCommand;
 import com.synxo.service.command.SendMessageCommand;
 import com.synxo.service.command.RegisterUserCommand;
 import com.synxo.service.command.UpdatePreciseLocationCommand;
 import com.synxo.service.command.UpdateProfileCommand;
+import com.synxo.service.model.AchievementView;
 import com.synxo.service.model.ChatMessageView;
 import com.synxo.service.model.ChatPreview;
+import com.synxo.service.model.DailyMatchResult;
 import com.synxo.service.model.MatchResult;
 import com.synxo.web.dto.request.RegisterRequest;
 import com.synxo.web.dto.request.SendMessageRequest;
+import com.synxo.web.dto.request.UpdateMatchingPreferencesRequest;
 import com.synxo.web.dto.request.UpdatePreciseLocationRequest;
 import com.synxo.web.dto.request.UpdateProfileRequest;
+import com.synxo.web.dto.response.AchievementResponse;
 import com.synxo.web.dto.response.ChatMessageResponse;
 import com.synxo.web.dto.response.ChatPreviewResponse;
+import com.synxo.web.dto.response.DailyMatchResponse;
 import com.synxo.web.dto.response.MatchResponse;
+import com.synxo.web.dto.response.MatchingPreferencesResponse;
 import com.synxo.web.dto.response.NotificationResponse;
 import com.synxo.web.dto.response.ProfileResponse;
 import com.synxo.web.dto.response.UserResponse;
@@ -67,7 +74,9 @@ public class ApiMapper {
 			profile.hasPreciseLocation(),
 			profile.getState(),
 			profile.getInterests(),
-			profile.getLastActiveAt()
+			profile.getLastActiveAt(),
+			profile.getActivityStreakDays(),
+			toMatchingPreferencesResponse(profile)
 		);
 	}
 
@@ -88,6 +97,7 @@ public class ApiMapper {
 			matchResult.intentionScore(),
 			matchResult.activityScore(),
 			matchResult.socialScore(),
+			matchResult.whyMatched(),
 			matchResult.likedByYou(),
 			matchResult.likedYou(),
 			matchResult.mutualLike()
@@ -105,6 +115,17 @@ public class ApiMapper {
 
 	public UpdatePreciseLocationCommand toCommand(UpdatePreciseLocationRequest request) {
 		return new UpdatePreciseLocationCommand(request.enabled(), request.latitude(), request.longitude());
+	}
+
+	public UpdateMatchingPreferencesCommand toCommand(UpdateMatchingPreferencesRequest request) {
+		return new UpdateMatchingPreferencesCommand(
+			request.enabled(),
+			request.interestPriority(),
+			request.distancePriority(),
+			request.intentionPriority(),
+			request.activityPriority(),
+			request.socialPriority()
+		);
 	}
 
 	public SendMessageCommand toCommand(SendMessageRequest request) {
@@ -139,6 +160,33 @@ public class ApiMapper {
 			notification.getType(),
 			notification.getMessage(),
 			notification.getCreatedAt()
+		);
+	}
+
+	public DailyMatchResponse toDailyMatchResponse(DailyMatchResult result) {
+		return new DailyMatchResponse(
+			result.generatedFor(),
+			result.match() == null ? null : toMatchResponse(result.match())
+		);
+	}
+
+	public AchievementResponse toAchievementResponse(AchievementView achievement) {
+		return new AchievementResponse(
+			achievement.code(),
+			achievement.title(),
+			achievement.description(),
+			achievement.unlockedAt()
+		);
+	}
+
+	private MatchingPreferencesResponse toMatchingPreferencesResponse(Profile profile) {
+		return new MatchingPreferencesResponse(
+			profile.hasPersonalizedMatching(),
+			profile.getInterestPriority(),
+			profile.getDistancePriority(),
+			profile.getIntentionPriority(),
+			profile.getActivityPriority(),
+			profile.getSocialPriority()
 		);
 	}
 }

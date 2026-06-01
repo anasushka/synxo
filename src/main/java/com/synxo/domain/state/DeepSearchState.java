@@ -9,7 +9,6 @@ public class DeepSearchState implements ProfileState {
 	@Override
 	public List<Profile> search(Profile current, List<Profile> candidates) {
 		return visibleCandidates(current, candidates)
-			.filter(candidate -> current.commonInterestCount(candidate) >= 2)
 			.toList();
 	}
 
@@ -21,10 +20,5 @@ public class DeepSearchState implements ProfileState {
 	@Override
 	public ProfileStateType getType() {
 		return ProfileStateType.DEEP_SEARCH;
-	}
-
-	@Override
-	public int minimumSharedInterests() {
-		return 2;
 	}
 }

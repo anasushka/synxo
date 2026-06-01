@@ -6,6 +6,7 @@ import com.synxo.domain.exception.ResourceNotFoundException;
 import com.synxo.domain.model.Profile;
 import com.synxo.domain.model.User;
 import com.synxo.repository.UserRepository;
+import com.synxo.service.AchievementService;
 import com.synxo.service.AuthService;
 import com.synxo.service.LocationService;
 import com.synxo.service.NotificationService;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final NotificationService notificationService;
 	private final LocationService locationService;
+	private final AchievementService achievementService;
 
 	@Override
 	public User register(RegisterUserCommand command) {
@@ -57,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
 
 		User savedUser = userRepository.save(user);
 		notificationService.createWelcomeNotification(savedUser.getId());
+		achievementService.evaluateForUser(savedUser.getId());
 		return savedUser;
 	}
 

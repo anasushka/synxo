@@ -14,6 +14,8 @@ public interface NotificationService {
 
 	void createMessageNotification(Long recipientUserId, Long senderUserId, String message);
 
+	void createSystemNotification(Long recipientUserId, String message);
+
 	List<UserNotification> getUnreadNotifications(String email);
 
 	void dismissNotification(String email, Long notificationId);

@@ -2,6 +2,7 @@ package com.synxo.web.controller;
 
 import com.synxo.domain.enums.MatchingMode;
 import com.synxo.service.MatchingService;
+import com.synxo.web.dto.response.DailyMatchResponse;
 import com.synxo.web.dto.response.MatchResponse;
 import com.synxo.web.mapper.ApiMapper;
 import java.util.List;
@@ -32,6 +33,14 @@ public class MatchingController {
 		return matchingService.findMatches(authentication.getName(), strategy, page, size).stream()
 			.map(apiMapper::toMatchResponse)
 			.toList();
+	}
+
+	@GetMapping("/daily")
+	public DailyMatchResponse findDailyMatch(
+		Authentication authentication,
+		@RequestParam(defaultValue = "RECOMMENDATION") MatchingMode strategy
+	) {
+		return apiMapper.toDailyMatchResponse(matchingService.findDailyMatch(authentication.getName(), strategy));
 	}
 
 	@PostMapping("/{userId}/like")

@@ -324,6 +324,13 @@ img {
 	gap: 12px;
 }
 
+.home-focus-grid,
+.achievement-list,
+.preference-sliders {
+	display: grid;
+	gap: 12px;
+}
+
 .info-grid {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -344,6 +351,10 @@ img {
 
 .card-grid {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-focus-grid {
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
 }
 
 .info-panel,
@@ -628,6 +639,18 @@ select:focus {
 	font-size: 0.88rem;
 }
 
+.reason-chip {
+	display: inline-flex;
+	align-items: center;
+	min-height: 34px;
+	padding: 0 12px;
+	border-radius: var(--radius);
+	background: rgba(255, 255, 255, 0.82);
+	border: 1px solid var(--line-soft);
+	font-size: 0.88rem;
+	color: var(--text);
+}
+
 .tag.success {
 	background: rgba(220, 192, 224, 0.44);
 	border-color: rgba(167, 110, 160, 0.24);
@@ -814,6 +837,65 @@ select:focus {
 	gap: 10px;
 }
 
+.daily-match-layout {
+	display: grid;
+	grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
+	gap: 16px;
+	align-items: stretch;
+}
+
+.daily-match-copy {
+	display: grid;
+	gap: 12px;
+	align-content: start;
+	min-width: 0;
+}
+
+.home-feature-card {
+	align-content: start;
+}
+
+.reason-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.achievement-item {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 12px;
+	align-items: start;
+	padding: 14px;
+	border-radius: var(--radius);
+	border: 1px solid var(--line-soft);
+	background: rgba(255, 255, 255, 0.7);
+}
+
+.achievement-badge {
+	width: 40px;
+	height: 40px;
+	display: grid;
+	place-items: center;
+	border-radius: var(--radius);
+	border: 1px solid rgba(167, 110, 160, 0.2);
+	background: linear-gradient(135deg, var(--blush), var(--sky));
+	font-weight: 700;
+	color: var(--accent-strong);
+}
+
+.achievement-copy {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+}
+
+.achievement-copy p,
+.achievement-copy time {
+	margin: 0;
+	color: var(--muted);
+}
+
 .profile-basics-grid input,
 .profile-basics-grid select {
 	max-width: 100%;
@@ -876,18 +958,20 @@ select:focus {
 
 .score-breakdown {
 	display: grid;
-	grid-template-columns: repeat(5, minmax(88px, 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 6px;
+	max-width: 100%;
 }
 
 .score-breakdown span {
+	min-width: 0;
 	border: 1px solid var(--line-soft);
 	border-radius: var(--radius);
 	padding: 7px 8px;
 	background: rgba(255, 255, 255, 0.64);
 	font-size: 0.82rem;
 	color: var(--muted);
-	white-space: nowrap;
+	overflow-wrap: anywhere;
 }
 
 .location-panel {
@@ -897,6 +981,38 @@ select:focus {
 	border: 1px solid var(--line-soft);
 	border-radius: var(--radius);
 	background: rgba(255, 255, 255, 0.6);
+}
+
+.toggle-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	width: fit-content;
+}
+
+.toggle-row input {
+	width: auto;
+	min-height: auto;
+	margin: 0;
+}
+
+.slider-field {
+	display: grid;
+	gap: 8px;
+}
+
+.slider-field span {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.slider-field input[type="range"] {
+	padding: 0;
+	min-height: auto;
+	background: transparent;
+	border: none;
 }
 
 .geo-attribution {
@@ -949,6 +1065,9 @@ select:focus {
 .toast-close {
 	width: 30px;
 	height: 30px;
+	display: grid;
+	place-items: center;
+	padding: 0;
 	border: 1px solid var(--line-soft);
 	border-radius: var(--radius);
 	background: rgba(255, 255, 255, 0.82);
@@ -989,6 +1108,7 @@ select:focus {
 	.info-grid,
 	.stats-grid,
 	.card-grid,
+	.home-focus-grid,
 	.auth-layout,
 	.chat-layout,
 	.profile-layout,
@@ -1059,6 +1179,7 @@ select:focus {
 	}
 
 	.match-head,
+	.daily-match-layout,
 	.composer-row {
 		grid-template-columns: 1fr;
 	}

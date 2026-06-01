@@ -4,6 +4,7 @@ import com.synxo.domain.model.ProfileLike;
 import com.synxo.domain.model.User;
 import com.synxo.repository.ProfileLikeRepository;
 import com.synxo.repository.UserRepository;
+import com.synxo.service.AchievementService;
 import com.synxo.service.NotificationService;
 import com.synxo.service.ProfileLikeService;
 import com.synxo.service.model.LikeResult;
@@ -20,15 +21,18 @@ public class ProfileLikeServiceImpl implements ProfileLikeService {
 	private final ProfileLikeRepository profileLikeRepository;
 	private final UserRepository userRepository;
 	private final NotificationService notificationService;
+	private final AchievementService achievementService;
 
 	public ProfileLikeServiceImpl(
 		ProfileLikeRepository profileLikeRepository,
 		UserRepository userRepository,
-		NotificationService notificationService
+		NotificationService notificationService,
+		AchievementService achievementService
 	) {
 		this.profileLikeRepository = profileLikeRepository;
 		this.userRepository = userRepository;
 		this.notificationService = notificationService;
+		this.achievementService = achievementService;
 	}
 
 	@Override
@@ -62,6 +66,8 @@ public class ProfileLikeServiceImpl implements ProfileLikeService {
 		if (!alreadyLiked && mutualLike) {
 			notificationService.createMatchNotification(likerUserId, likedUserId);
 			notificationService.createMatchNotification(likedUserId, likerUserId);
+			achievementService.evaluateForUser(likerUserId);
+			achievementService.evaluateForUser(likedUserId);
 		}
 
 		return new LikeResult(true, likedYou, mutualLike, !alreadyLiked);
